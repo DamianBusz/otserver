@@ -12,6 +12,8 @@
 #include "enums/weapon_proficiency.hpp"
 #include "creatures/creatures_definitions.hpp"
 #include "utils/hash.hpp"
+#include <nlohmann/json.hpp>
+#include <map>
 
 enum class BosstiaryRarity_t : uint8_t;
 
@@ -27,6 +29,11 @@ public:
 	explicit WeaponProficiency(Player &player);
 
 	[[nodiscard]] static bool loadFromJson(bool reload = false);
+	[[nodiscard]] static bool loadShapingFromJson();
+	[[nodiscard]] nlohmann::json shapingState(uint16_t weaponId) const;
+	nlohmann::json shapingRequest(const nlohmann::json &request);
+	[[nodiscard]] static std::string serializeShapes(const WeaponProficiencyData &data);
+	static void deserializeShapes(WeaponProficiencyData &data, const std::string &text);
 
 	[[nodiscard]] static std::unordered_map<uint16_t, Proficiency> &getProficiencies();
 
@@ -112,6 +119,8 @@ public:
 	void applyOn(WeaponProficiencyHealth_t healthType, WeaponProficiencyGain_t gainType) const;
 
 	void applySpellAugment(CombatDamage &damage, uint16_t spellId) const;
+	bool tryHomingMissile() const;
+	[[nodiscard]] static int32_t homingMissileDamage(uint32_t level, double multiplier);
 
 	[[nodiscard]] const SkillPercentage &getSkillPercentage(skills_t skill) const;
 
@@ -129,6 +138,19 @@ private:
 	[[nodiscard]] size_t getUnlockedLevelCount(uint16_t weaponId) const;
 	[[nodiscard]] std::vector<ProficiencyPerk> collectValidSelectedPerks(uint16_t weaponId) const;
 	void normalizeStoredState(uint16_t weaponId);
+	void normalizeShapes(uint16_t weaponId);
+	[[nodiscard]] uint8_t shapingVocation(uint16_t weaponId) const;
+	[[nodiscard]] ProficiencyPerk shapedPerk(uint16_t weaponId, const ProficiencyPerk &base) const;
+	[[nodiscard]] double highestCombatSkill() const;
+	struct ShapeDefinition {
+		uint16_t id = 0;
+		uint8_t vocation = 0;
+		ProficiencyPerk perk;
+		double maximum = 0;
+		nlohmann::json client;
+	};
+	static std::map<uint16_t, ShapeDefinition> shapeDefinitions;
+	SkillPercentage m_highestSkillPercentage;
 
 	Player &m_player;
 

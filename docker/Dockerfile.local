@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1.7
+# Local development build without the CI-only NuGet credentials.
+# docker build -f docker/Dockerfile.local -t canary-local:rebalance .
+FROM ubuntu:24.04 AS build
+ENV DEBIAN_FRONTEND=noninteractive VCPKG_ROOT=/opt/vcpkg VCPKG_MAX_CONCURRENCY=2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build git curl ca-certificates zip unzip tar \
+    pkg-config autoconf automake libtool python3 && rm -rf /var/lib/apt/lists/*
+WORKDIR /srv
+COPY vcpkg.json vcpkg-configuration.json CMakeLists.txt CMakePresets.json ./
+COPY cmake ./cmake
+COPY vcpkg-registry ./vcpkg-registry
+RUN git init /opt/vcpkg && git -C /opt/vcpkg remote add origin https://github.com/microsoft/vcpkg.git \
+    && baseline=$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])') \
+    && git -C /opt/vcpkg fetch --depth=1 origin "$baseline" \
+    && git -C /opt/vcpkg checkout --detach FETCH_HEAD \
+    && /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+COPY src ./src
+COPY tests ./tests
+RUN --mount=type=cache,target=/root/.cache/vcpkg \
+    --mount=type=cache,target=/opt/vcpkg/downloads \
+    cmake --preset linux-release -DTOGGLE_BIN_FOLDER=ON \
+    && cmake --build --preset linux-release --target canary --parallel 2
+
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    mariadb-client curl ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
+COPY --from=build /srv/build/linux-release/bin/canary /bin/canary
+WORKDIR /canary
+COPY LICENSE schema.sql key.pem ./
+COPY config.lua.dist ./config.lua
+COPY data ./data
+COPY data-canary ./data-canary
+COPY data-otservbr-global ./data-otservbr-global
+COPY docker/data/01-test_account.sql docker/data/02-test_account_players.sql ./
+COPY --chmod=755 docker/data/start.sh ./start.sh
+VOLUME ["/data"]
+ENTRYPOINT ["/canary/start.sh"]

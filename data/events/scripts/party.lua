@@ -69,6 +69,12 @@ function Party:onShareExperience(exp)
 	local uniqueVocationsCount = self:getUniqueVocationsCount()
 	local partySize = self:getMemberCount() + 1
 
+	-- Release rebalance: bonuses depend on distinct vocations, not party size.
+	if uniqueVocationsCount == 2 or uniqueVocationsCount == 3 then
+		local multiplier = uniqueVocationsCount == 2 and 1.35 or 1.70
+		return math.ceil((exp * multiplier) / partySize)
+	end
+
 	-- Formula to calculate the % based on the vocations amount
 	local sharedExperienceMultiplier = ((0.1 * (uniqueVocationsCount ^ 2)) - (0.2 * uniqueVocationsCount) + 1.3)
 	-- Since the formula its non linear, we need to subtract 0.1 if all vocations are present,

@@ -8,10 +8,6 @@ function onGetFormulaValues(player, level, maglevel)
 	return formulaFunction(player, level, maglevel)
 end
 
-function onGetFormulaValuesWOD(player, level, maglevel)
-	return formulaFunction(player, level, maglevel)
-end
-
 local function createCombat(area, combatFunc)
 	local initCombat = Combat()
 	initCombat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, combatFunc)
@@ -22,16 +18,15 @@ local function createCombat(area, combatFunc)
 end
 
 local combat = createCombat(AREA_BEAM8, "onGetFormulaValues")
-local combatWOD = createCombat(AREA_BEAM10, "onGetFormulaValuesWOD")
 
 local spell = Spell("instant")
 
 function spell.onCastSpell(creature, var)
-	local player = creature:getPlayer()
-	if not creature or not player then
+	if not creature or not creature:isPlayer() then
 		return false
 	end
-	return player:instantSkillWOD("Beam Mastery") and combatWOD:execute(creature, var) or combat:execute(creature, var)
+	-- Beam Mastery adds side strips in the engine; central length stays fixed.
+	return combat:execute(creature, var)
 end
 
 spell:group("attack", "greatbeams")

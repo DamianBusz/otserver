@@ -513,6 +513,7 @@ public:
 	float pvpLevelDifferenceDamageMultiplier(const std::shared_ptr<Player> &attacker, const std::shared_ptr<Player> &target);
 
 	// Wheel of destiny combat helpers
+	void applyDruidSecondaryHealing(const CombatDamage &damage, const std::shared_ptr<Player> &caster, const std::shared_ptr<Creature> &primary);
 	void applyWheelOfDestinyHealing(CombatDamage &damage, const std::shared_ptr<Player> &attackerPlayer, std::shared_ptr<Creature> target);
 	void applyWheelOfDestinyEffectsToDamage(CombatDamage &damage, const std::shared_ptr<Player> &attackerPlayer, const std::shared_ptr<Creature> &target) const;
 	int32_t applyHealthChange(const CombatDamage &damage, const std::shared_ptr<Creature> &target) const;
@@ -577,6 +578,7 @@ public:
 	const phmap::parallel_flat_hash_map<uint32_t, std::shared_ptr<Player>> &getPlayers() const {
 		return players;
 	}
+	void updatePartyTracking();
 	const auto &getMonsters() const {
 		return monsters;
 	}

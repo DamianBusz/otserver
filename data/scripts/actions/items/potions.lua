@@ -43,9 +43,12 @@ local function magicshield(player)
 end
 
 local potions = {
+	[53162] = { mana = { 240, 360 }, vocations = { VOCATION.BASE_ID.SORCERER, VOCATION.BASE_ID.DRUID, VOCATION.BASE_ID.PALADIN, VOCATION.BASE_ID.MONK }, level = 100, flask = 284, description = "Only sorcerers, druids, paladins and monks of level 100 or above may drink this fluid." },
+	[53163] = { mana = { 240, 360 }, level = 130, flask = 284, description = "Only players of level 130 or above may drink this fluid." },
+	[53164] = { mana = { 425, 575 }, level = 200, flask = 284, description = "Only players of level 200 or above may drink this fluid." },
 	[236] = { health = { 250, 350 }, vocations = { VOCATION.BASE_ID.PALADIN, VOCATION.BASE_ID.KNIGHT, VOCATION.BASE_ID.MONK }, level = 50, flask = 283, description = "Only knights, paladins and monks of level 50 or above may drink this fluid." },
 	[237] = { mana = { 115, 185 }, level = 50, flask = 283, description = "Only players of level 50 or above may drink this fluid." },
-	[238] = { mana = { 150, 250 }, vocations = { VOCATION.BASE_ID.SORCERER, VOCATION.BASE_ID.DRUID, VOCATION.BASE_ID.PALADIN, VOCATION.BASE_ID.MONK }, level = 80, flask = 284, description = "Only sorcerers, druids, paladins and monks of level 80 or above may drink this fluid." },
+	[238] = { mana = { 150, 250 }, level = 80, flask = 284, description = "Only players of level 80 or above may drink this fluid." },
 	[239] = { health = { 425, 575 }, vocations = { VOCATION.BASE_ID.KNIGHT }, level = 80, flask = 284, description = "Only knights of level 80 or above may drink this fluid." },
 	[266] = { health = { 125, 175 }, flask = 285 },
 	[268] = { mana = { 75, 125 }, flask = 285 },

@@ -232,7 +232,7 @@ public:
 	 * @param grade The grade of the wheel of destiny.
 	 * @return The boost value for the specified boost and grade.
 	 */
-	[[nodiscard]] int32_t getWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade) const;
+	[[nodiscard]] double getWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade) const;
 
 	/**
 	 * @brief Set whether the wheel of destiny is upgraded.
@@ -248,7 +248,7 @@ public:
 	 * @param grade The grade of the wheel of destiny.
 	 * @param value The boost value to be set.
 	 */
-	void setWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade, int32_t value);
+	void setWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade, double value);
 
 	[[nodiscard]] const std::string &getWords() const;
 
@@ -288,8 +288,8 @@ protected:
 	bool pzLocked = false;
 
 	bool whellOfDestinyUpgraded = false;
-	std::array<int32_t, magic_enum::enum_count<WheelSpellBoost_t>() + 1> wheelOfDestinyRegularBoost = { 0 };
-	std::array<int32_t, magic_enum::enum_count<WheelSpellBoost_t>() + 1> wheelOfDestinyUpgradedBoost = { 0 };
+	std::array<double, magic_enum::enum_count<WheelSpellBoost_t>() + 1> wheelOfDestinyRegularBoost = { 0 };
+	std::array<double, magic_enum::enum_count<WheelSpellBoost_t>() + 1> wheelOfDestinyUpgradedBoost = { 0 };
 
 private:
 	uint32_t mana = 0;
@@ -316,7 +316,7 @@ private:
 class InstantSpell final : public Spell {
 public:
 	InstantSpell();
-	bool playerCastInstant(const std::shared_ptr<Player> &player, std::string &param) const;
+	bool playerCastInstant(const std::shared_ptr<Player> &player, std::string &param, const Position* aim = nullptr) const;
 
 	bool castSpell(const std::shared_ptr<Creature> &creature) override;
 	bool castSpell(const std::shared_ptr<Creature> &creature, const std::shared_ptr<Creature> &target) override;

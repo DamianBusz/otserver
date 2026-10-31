@@ -64,6 +64,13 @@
     <ClInclude Include="..\src\creatures\players\components\pvp\player_pvp.hpp" />
     <ClInclude Include="..\src\creatures\players\components\wheel\player_wheel.hpp" />
     <ClInclude Include="..\src\creatures\players\components\weapon_proficiency.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\elemental_stance.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\paladin_stance.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\druid_stance.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\knight_stance.hpp" />
+    <ClInclude Include="..\src\creatures\combat\attack_reduction.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\druid_healing.hpp" />
+    <ClInclude Include="..\src\creatures\players\components\mana_buffer.hpp" />
     <ClInclude Include="..\src\creatures\players\wheel\wheel_definitions.hpp" />
     <ClInclude Include="..\src\database\database.hpp" />
     <ClInclude Include="..\src\database\databasemanager.hpp" />
@@ -240,6 +247,7 @@
     <ClInclude Include="..\src\server\network\protocol\protocol_profile.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocol_session_hint.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocolgame.hpp" />
+    <ClInclude Include="..\src\server\network\protocol\party_tracking.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocollogin.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocolstatus.hpp" />
     <ClInclude Include="..\src\server\network\protocol\transport_codec.hpp" />
@@ -309,6 +317,7 @@
     <ClCompile Include="..\src\creatures\players\components\pvp\player_pvp.cpp" />
     <ClCompile Include="..\src\creatures\players\components\wheel\player_wheel.cpp" />
     <ClCompile Include="..\src\creatures\players\components\weapon_proficiency.cpp" />
+    <ClCompile Include="..\src\creatures\players\components\weapon_proficiency_shaping.cpp" />
     <ClCompile Include="..\src\database\database.cpp" />
     <ClCompile Include="..\src\database\databasemanager.cpp" />
     <ClCompile Include="..\src\database\databasetasks.cpp" />
@@ -458,6 +467,7 @@
     <ClCompile Include="..\src\server\network\protocol\protocol_profile.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocol_session_hint.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocolgame.cpp" />
+    <ClCompile Include="..\src\server\network\protocol\party_tracking.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocollogin.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocolstatus.cpp" />
     <ClCompile Include="..\src\server\network\protocol\transport_codec.cpp" />

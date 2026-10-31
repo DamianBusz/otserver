@@ -3,4 +3,5 @@ target_sources(
     PRIVATE network/connection/connection_write_diagnostics_test.cpp
             network/message/networkmessage_test.cpp
             network/protocol/multiprotocol_test.cpp
+            network/protocol/party_tracking_test.cpp
 )

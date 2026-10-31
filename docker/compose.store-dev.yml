@@ -1,0 +1,6 @@
+# Optional local store development overlay; the server still uses the published image.
+# Run with: docker compose -f docker-compose.yml -f compose.store-dev.yml up -d
+services:
+  server:
+    volumes:
+      - ../data/modules/scripts/gamestore/catalog/consumables_potions.lua:/canary/data/modules/scripts/gamestore/catalog/consumables_potions.lua:ro

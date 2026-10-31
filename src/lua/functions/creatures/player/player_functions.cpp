@@ -207,6 +207,7 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "getBaseMaxMana", PlayerFunctions::luaPlayerGetBaseMaxMana);
 
 	Lua::registerMethod(L, "Player", "getSkillLevel", PlayerFunctions::luaPlayerGetSkillLevel);
+	Lua::registerMethod(L, "Player", "getShieldSpellDefense", PlayerFunctions::luaPlayerGetShieldSpellDefense);
 	Lua::registerMethod(L, "Player", "getEffectiveSkillLevel", PlayerFunctions::luaPlayerGetEffectiveSkillLevel);
 	Lua::registerMethod(L, "Player", "getSkillPercent", PlayerFunctions::luaPlayerGetSkillPercent);
 	Lua::registerMethod(L, "Player", "getSkillTries", PlayerFunctions::luaPlayerGetSkillTries);
@@ -502,6 +503,15 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "setSerene", PlayerFunctions::luaPlayerSetSerene);
 	Lua::registerMethod(L, "Player", "getVirtue", PlayerFunctions::luaPlayerGetVirtue);
 	Lua::registerMethod(L, "Player", "setVirtue", PlayerFunctions::luaPlayerSetVirtue);
+	Lua::registerMethod(L, "Player", "castAimedSpell", PlayerFunctions::luaPlayerCastAimedSpell);
+	Lua::registerMethod(L, "Player", "setElementalStance", PlayerFunctions::luaPlayerSetElementalStance);
+	Lua::registerMethod(L, "Player", "getElementalStance", PlayerFunctions::luaPlayerGetElementalStance);
+	Lua::registerMethod(L, "Player", "setPaladinStance", PlayerFunctions::luaPlayerSetPaladinStance);
+	Lua::registerMethod(L, "Player", "getPaladinStance", PlayerFunctions::luaPlayerGetPaladinStance);
+	Lua::registerMethod(L, "Player", "setDruidStance", PlayerFunctions::luaPlayerSetDruidStance);
+	Lua::registerMethod(L, "Player", "getDruidStance", PlayerFunctions::luaPlayerGetDruidStance);
+	Lua::registerMethod(L, "Player", "setKnightStance", PlayerFunctions::luaPlayerSetKnightStance);
+	Lua::registerMethod(L, "Player", "getKnightStance", PlayerFunctions::luaPlayerGetKnightStance);
 	Lua::registerMethod(L, "Player", "fillHarmony", PlayerFunctions::luaPlayerFillHarmony);
 	Lua::registerMethod(L, "Player", "getHarmony", PlayerFunctions::luaPlayerGetHarmony);
 	Lua::registerMethod(L, "Player", "getHarmonyDamage", PlayerFunctions::luaPlayerGetHarmonyDamage);
@@ -1617,6 +1627,18 @@ int PlayerFunctions::luaPlayerGetBaseMaxMana(lua_State* L) {
 	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
 	if (player) {
 		lua_pushnumber(L, player->manaMax);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerGetShieldSpellDefense(lua_State* L) {
+	// player:getShieldSpellDefense(): nil without a shield, otherwise item defense + weapon modifier.
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto defense = player ? player->getShieldSpellDefense() : std::nullopt;
+	if (defense) {
+		lua_pushnumber(L, *defense);
 	} else {
 		lua_pushnil(L);
 	}
@@ -5438,6 +5460,161 @@ int PlayerFunctions::luaPlayerSetSerene(lua_State* L) {
 	int32_t ticks = Lua::getNumber<int32_t>(L, 3, -1);
 	player->setSerene(set, ticks);
 	Lua::pushBoolean(L, true);
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerCastAimedSpell(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto words = Lua::getString(L, 2);
+	const auto aim = Lua::getPosition(L, 3);
+	auto param = Lua::getString(L, 4);
+	const auto spell = g_spells().getInstantSpell(words);
+	if (!player || player->isRemoved() || player->getHealth() <= 0 || !spell || spell->getWords() != words) {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	Lua::pushBoolean(L, spell->playerCastInstant(player, param, &aim));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerSetPaladinStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto key = Lua::getString(L, 2);
+	PaladinStance stance;
+	if (key == "sharpshooter") {
+		stance = PaladinStance::Sharpshooter;
+	} else if (key == "divine-defiance") {
+		stance = PaladinStance::DivineDefiance;
+	} else if (key == "none") {
+		stance = PaladinStance::None;
+	} else {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	Lua::pushBoolean(L, player && player->setPaladinStance(stance));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerGetPaladinStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+	const auto stance = player->getPaladinStance();
+	Lua::pushString(L, stance == PaladinStance::Sharpshooter ? "sharpshooter" : stance == PaladinStance::DivineDefiance ? "divine-defiance" : "none");
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerSetDruidStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto key = Lua::getString(L, 2);
+	DruidStance stance;
+	if (key == "shared-conservation") {
+		stance = DruidStance::SharedConservation;
+	} else if (key == "elemental-synthesis") {
+		stance = DruidStance::ElementalSynthesis;
+	} else if (key == "none") {
+		stance = DruidStance::None;
+	} else {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	Lua::pushBoolean(L, player && player->setDruidStance(stance));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerGetDruidStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+	const auto stance = player->getDruidStance();
+	Lua::pushString(L, stance == DruidStance::SharedConservation ? "shared-conservation" : stance == DruidStance::ElementalSynthesis ? "elemental-synthesis" : "none");
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerSetKnightStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto key = Lua::getString(L, 2);
+	KnightStance stance;
+	if (key == "blood-rage") {
+		stance = KnightStance::BloodRage;
+	} else if (key == "protector") {
+		stance = KnightStance::Protector;
+	} else if (key == "none") {
+		stance = KnightStance::None;
+	} else {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	Lua::pushBoolean(L, player && player->setKnightStance(stance));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerGetKnightStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+	const auto stance = player->getKnightStance();
+	Lua::pushString(L, stance == KnightStance::BloodRage ? "blood-rage" : stance == KnightStance::Protector ? "protector" : "none");
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerSetElementalStance(lua_State* L) {
+	// player:setElementalStance("flames" | "thunder" | "decay" | "none")
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (!player || player->getPlayerVocationEnum() != VOCATION_SORCERER_CIP) {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	const auto name = Lua::getString(L, 2);
+	if (name != "none" && (player->getLevel() < 20 || !player->isPremium())) {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	SpellElement element;
+	if (name == "flames") {
+		element = SpellElement::Fire;
+	} else if (name == "thunder") {
+		element = SpellElement::Energy;
+	} else if (name == "decay") {
+		element = SpellElement::Death;
+	} else if (name == "none") {
+		element = SpellElement::None;
+	} else {
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+	player->elementalStance().select(element);
+	player->sendElementalStance();
+	Lua::pushBoolean(L, true);
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerGetElementalStance(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+	switch (player->elementalStance().getSelected()) {
+		case SpellElement::Fire:
+			Lua::pushString(L, "flames");
+			break;
+		case SpellElement::Energy:
+			Lua::pushString(L, "thunder");
+			break;
+		case SpellElement::Death:
+			Lua::pushString(L, "decay");
+			break;
+		default:
+			Lua::pushString(L, "none");
+			break;
+	}
 	return 1;
 }
 

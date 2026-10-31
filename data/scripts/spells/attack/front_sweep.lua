@@ -1,21 +1,32 @@
-local combat = Combat()
-combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
-combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_HITAREA)
-combat:setParameter(COMBAT_PARAM_BLOCKARMOR, 1)
-combat:setParameter(COMBAT_PARAM_USECHARGES, 1)
-combat:setArea(createCombatArea(AREA_WAVE6, AREADIAGONAL_WAVE6))
-
-function onGetFormulaValues(player, skill, attack, factor)
-	local skillTotal = skill * attack
-	local levelTotal = player:getLevel() / 5
-	return -(((skillTotal * 0.04) + 31) + levelTotal) * 1.1, -(((skillTotal * 0.08) + 45) + levelTotal) * 1.1 -- TODO : Use New Real Formula instead of an %
+local function sweepFormula(player, skill, attack, factor)
+	local level = KnightSpellFormula.levelBonus(player:getLevel())
+	local scaling = skill * attack / 1000 + 0.25
+	return -(level + math.floor(60 * scaling + 0.5)), -(level + math.floor(100 * scaling + 0.5))
 end
 
-combat:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValues")
+local function makeSweep(area)
+	local combat = Combat()
+	combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
+	combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_HITAREA)
+	combat:setParameter(COMBAT_PARAM_BLOCKARMOR, 1)
+	combat:setParameter(COMBAT_PARAM_USECHARGES, 1)
+	combat:setArea(createCombatArea(area))
+	-- Named callback registration consumes the global on each call.
+	onGetFormulaValues = sweepFormula
+	combat:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValues")
+	return combat
+end
 
+-- Directional variants already point one tile ahead. Marker 3 is that affected
+-- front tile, not the caster. Augment II adds the two squares beside the caster.
+local combat = makeSweep({ { 1, 3, 1 } })
+local augmentedCombat = makeSweep({ { 1, 3, 1 }, { 1, 0, 1 } })
 local spell = Spell("instant")
-
 function spell.onCastSpell(creature, var)
+	local player = creature:getPlayer()
+	if player and player:getWheelSpellAdditionalArea("Front Sweep") then
+		return augmentedCombat:execute(creature, var)
+	end
 	return combat:execute(creature, var)
 end
 

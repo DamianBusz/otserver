@@ -60,6 +60,8 @@ The next weekly cycle starts on Monday at the configured global server-save hour
 
 Persisted bounty options follow the same boundary rules: unknown races, zero requirements, duplicate choices, and extra active assignments are rejected. Invalid unlocked preference races are cleared, locked preferences cannot retain hidden assignments, and the first preference remains available as the free base slot.
 
+A bounty reroll spends one token to replace either the available choices or the selected, unfinished assignment with fresh choices. Replacing a selected assignment discards its progress without granting rewards and clears its creature icon. Completed assignments must be claimed before rerolling. Claiming the daily token preserves the current assignment and remains subject to the claim cooldown.
+
 Preference probabilities apply only to Bounty generation. Each configured unwanted race has the configured chance to be skipped from that generation, while each available preferred race receives the configured priority roll before uniform selection. Weekly creature assignments always use the unweighted difficulty catalog.
 
 Bounty points are stored by this module. Shop prices consume the existing task-hunting point API exposed by the server. Weekly completion points are awarded to that same task-hunting balance when the weekly cycle rolls over. Purchased Wheel points remain module-owned in `task-board/wheel/multiplier`; the Wheel reads that bounded value as zero to 50 extra points when calculating and serializing its available points. The next price is always derived from the multiplier instead of trusting an independent persisted value. The module never counts the store inbox as weekly delivery inventory.

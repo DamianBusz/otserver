@@ -1,0 +1,2376 @@
+{
+  "schema": 1,
+  "source": "https://tibiapal.com/data/proficiency/perk-shaping-options.json",
+  "sourceDate": "2026-07-23T21:25:04.691Z",
+  "costSource": "https://tibiamonk.com/en/info/perk-shaping",
+  "modifyCosts": [
+    250,
+    1000
+  ],
+  "refineCosts": [
+    125,
+    200,
+    275,
+    350,
+    425,
+    500,
+    575,
+    650,
+    725,
+    800
+  ],
+  "reshapeCost": 250,
+  "orbItemId": 53695,
+  "maxRank": 10,
+  "maxModifiedPerks": 2,
+  "perks": [
+    {
+      "Id": 1,
+      "Name": "Alpha Strike Extra Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 28,
+        "Value": 0.02
+      },
+      "MaximumValue": 0.1,
+      "Source": "https://www.tibiawiki.com.br/wiki/Alpha_Strike_Extra_Damage"
+    },
+    {
+      "Id": 2,
+      "Name": "Armor Penetration",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 30,
+        "Value": 0.04
+      },
+      "MaximumValue": 0.1,
+      "Source": "https://www.tibiawiki.com.br/wiki/Armor_Penetration"
+    },
+    {
+      "Id": 3,
+      "Name": "Auto-Attack Critical Extra Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 15,
+        "Value": 0.03
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Auto-Attack_Critical_Extra_Damage"
+    },
+    {
+      "Id": 4,
+      "Name": "Auto-Attack Critical Hit Chance",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 11,
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Auto-Attack_Critical_Hit_Chance"
+    },
+    {
+      "Id": 5,
+      "Name": "Bestiary Damage Amphibic",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Amphibic",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Amphibic"
+    },
+    {
+      "Id": 6,
+      "Name": "Bestiary Damage Aquatic",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Aquatic",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Aquatic"
+    },
+    {
+      "Id": 7,
+      "Name": "Bestiary Damage Bird",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Bird",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Bird"
+    },
+    {
+      "Id": 8,
+      "Name": "Bestiary Damage Construct",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Construct",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Construct"
+    },
+    {
+      "Id": 9,
+      "Name": "Bestiary Damage Demon",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Demon",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Demon"
+    },
+    {
+      "Id": 10,
+      "Name": "Bestiary Damage Dragon",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Dragon",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Dragon"
+    },
+    {
+      "Id": 11,
+      "Name": "Bestiary Damage Elemental",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Elemental",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Elemental"
+    },
+    {
+      "Id": 12,
+      "Name": "Bestiary Damage Extra Dimensional",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Extra Dimensional",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Extra_Dimensional"
+    },
+    {
+      "Id": 13,
+      "Name": "Bestiary Damage Fey",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Fey",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Fey"
+    },
+    {
+      "Id": 14,
+      "Name": "Bestiary Damage Giant",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Giant",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Giant"
+    },
+    {
+      "Id": 15,
+      "Name": "Bestiary Damage Human",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Human",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Human"
+    },
+    {
+      "Id": 16,
+      "Name": "Bestiary Damage Humanoid",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Humanoid",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Humanoid"
+    },
+    {
+      "Id": 17,
+      "Name": "Bestiary Damage Inkborn",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Inkborn",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Inkborn"
+    },
+    {
+      "Id": 18,
+      "Name": "Bestiary Damage Lycanthrope",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Lycanthrope",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Lycanthrope"
+    },
+    {
+      "Id": 19,
+      "Name": "Bestiary Damage Magical",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Magical",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Magical"
+    },
+    {
+      "Id": 20,
+      "Name": "Bestiary Damage Mammal",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Mammal",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Mammal"
+    },
+    {
+      "Id": 21,
+      "Name": "Bestiary Damage Plant",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Plant",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Plant"
+    },
+    {
+      "Id": 22,
+      "Name": "Bestiary Damage Reptile",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Reptile",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Reptile"
+    },
+    {
+      "Id": 23,
+      "Name": "Bestiary Damage Slime",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Slime",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Slime"
+    },
+    {
+      "Id": 24,
+      "Name": "Bestiary Damage Undead",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Undead",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Undead"
+    },
+    {
+      "Id": 25,
+      "Name": "Bestiary Damage Vermin",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 6,
+        "BestiaryName": "Vermin",
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Bestiary_Damage_Vermin"
+    },
+    {
+      "Id": 26,
+      "Name": "Highest Combat Skill Percentage Auto-Attack Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 25,
+        "HighestCombatSkill": true,
+        "Value": 0.02
+      },
+      "MaximumValue": 0.1,
+      "Source": "https://www.tibiawiki.com.br/wiki/Highest_Combat_Skill_Percentage_Auto-Attack_Damage"
+    },
+    {
+      "Id": 27,
+      "Name": "Highest Combat Skill Percentage Spell Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 26,
+        "HighestCombatSkill": true,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.08,
+      "Source": "https://www.tibiawiki.com.br/wiki/Highest_Combat_Skill_Percentage_Spell_Damage"
+    },
+    {
+      "Id": 28,
+      "Name": "Highest Combat Skill Percentage Spell Healing",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 27,
+        "HighestCombatSkill": true,
+        "Value": 0.02
+      },
+      "MaximumValue": 0.1,
+      "Source": "https://www.tibiawiki.com.br/wiki/Highest_Combat_Skill_Percentage_Spell_Healing"
+    },
+    {
+      "Id": 29,
+      "Name": "Life Gain on Hit",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 19,
+        "Value": 2.0
+      },
+      "MaximumValue": 12.0,
+      "Source": "https://www.tibiawiki.com.br/wiki/Life_Gain_on_Hit"
+    },
+    {
+      "Id": 30,
+      "Name": "Life Gain on Kill",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 21,
+        "Value": 10.0
+      },
+      "MaximumValue": 50.0,
+      "Source": "https://www.tibiawiki.com.br/wiki/Life_Gain_on_Kill"
+    },
+    {
+      "Id": 31,
+      "Name": "Mana Gain on Kill",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 20,
+        "Value": 4.0
+      },
+      "MaximumValue": 24.0,
+      "Source": "https://www.tibiawiki.com.br/wiki/Mana_Gain_on_Kill"
+    },
+    {
+      "Id": 32,
+      "Name": "Omega Strike Extra Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 29,
+        "Value": 0.005
+      },
+      "MaximumValue": 0.025,
+      "Source": "https://www.tibiawiki.com.br/wiki/Omega_Strike_Extra_Damage"
+    },
+    {
+      "Id": 33,
+      "Name": "Rune Critical Extra Damage",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 14,
+        "Value": 0.02
+      },
+      "MaximumValue": 0.15,
+      "Source": "https://www.tibiawiki.com.br/wiki/Rune_Critical_Extra_Damage"
+    },
+    {
+      "Id": 34,
+      "Name": "Rune Critical Hit Chance",
+      "Vocation": 0,
+      "Perk": {
+        "Type": 10,
+        "Value": 0.005
+      },
+      "MaximumValue": 0.015,
+      "Source": "https://www.tibiawiki.com.br/wiki/Rune_Critical_Hit_Chance"
+    },
+    {
+      "Id": 35,
+      "Name": "Spell Augment Berserk Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 80,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Berserk_Base_Damage"
+    },
+    {
+      "Id": 36,
+      "Name": "Spell Augment Berserk Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 80,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Berserk_Critical_Extra_Damage"
+    },
+    {
+      "Id": 37,
+      "Name": "Spell Augment Berserk Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 80,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Berserk_Critical_Hit_Chance"
+    },
+    {
+      "Id": 38,
+      "Name": "Spell Augment Berserk Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 80,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Berserk_Life_Leech"
+    },
+    {
+      "Id": 39,
+      "Name": "Spell Augment Berserk Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 80,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Berserk_Mana_Leech"
+    },
+    {
+      "Id": 40,
+      "Name": "Spell Augment Executioner's Throw Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 261,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Executioner%27s_Throw_Base_Damage"
+    },
+    {
+      "Id": 41,
+      "Name": "Spell Augment Executioner's Throw Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 261,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Executioner%27s_Throw_Critical_Extra_Damage"
+    },
+    {
+      "Id": 42,
+      "Name": "Spell Augment Executioner's Throw Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 261,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Executioner%27s_Throw_Critical_Hit_Chance"
+    },
+    {
+      "Id": 43,
+      "Name": "Spell Augment Executioner's Throw Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 261,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Executioner%27s_Throw_Life_Leech"
+    },
+    {
+      "Id": 44,
+      "Name": "Spell Augment Executioner's Throw Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 261,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Executioner%27s_Throw_Mana_Leech"
+    },
+    {
+      "Id": 45,
+      "Name": "Spell Augment Fierce Berserk Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 105,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Fierce_Berserk_Base_Damage"
+    },
+    {
+      "Id": 46,
+      "Name": "Spell Augment Fierce Berserk Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 105,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Fierce_Berserk_Critical_Extra_Damage"
+    },
+    {
+      "Id": 47,
+      "Name": "Spell Augment Fierce Berserk Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 105,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Fierce_Berserk_Critical_Hit_Chance"
+    },
+    {
+      "Id": 48,
+      "Name": "Spell Augment Fierce Berserk Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 105,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Fierce_Berserk_Life_Leech"
+    },
+    {
+      "Id": 49,
+      "Name": "Spell Augment Fierce Berserk Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 105,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Fierce_Berserk_Mana_Leech"
+    },
+    {
+      "Id": 50,
+      "Name": "Spell Augment Front Sweep Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 59,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Front_Sweep_Base_Damage"
+    },
+    {
+      "Id": 51,
+      "Name": "Spell Augment Front Sweep Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 59,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Front_Sweep_Critical_Extra_Damage"
+    },
+    {
+      "Id": 52,
+      "Name": "Spell Augment Front Sweep Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 59,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Front_Sweep_Critical_Hit_Chance"
+    },
+    {
+      "Id": 53,
+      "Name": "Spell Augment Front Sweep Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 59,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Front_Sweep_Life_Leech"
+    },
+    {
+      "Id": 54,
+      "Name": "Spell Augment Front Sweep Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 59,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Front_Sweep_Mana_Leech"
+    },
+    {
+      "Id": 55,
+      "Name": "Spell Augment Groundshaker Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 106,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Groundshaker_Base_Damage"
+    },
+    {
+      "Id": 56,
+      "Name": "Spell Augment Groundshaker Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 106,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Groundshaker_Critical_Extra_Damage"
+    },
+    {
+      "Id": 57,
+      "Name": "Spell Augment Groundshaker Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 106,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Groundshaker_Critical_Hit_Chance"
+    },
+    {
+      "Id": 58,
+      "Name": "Spell Augment Groundshaker Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 106,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Groundshaker_Life_Leech"
+    },
+    {
+      "Id": 59,
+      "Name": "Spell Augment Groundshaker Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 106,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Groundshaker_Mana_Leech"
+    },
+    {
+      "Id": 60,
+      "Name": "Spell Augment Shield Slam Base Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 316,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Shield_Slam_Base_Damage"
+    },
+    {
+      "Id": 61,
+      "Name": "Spell Augment Shield Slam Critical Extra Damage",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 316,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Shield_Slam_Critical_Extra_Damage"
+    },
+    {
+      "Id": 62,
+      "Name": "Spell Augment Shield Slam Critical Hit Chance",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 316,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Shield_Slam_Critical_Hit_Chance"
+    },
+    {
+      "Id": 63,
+      "Name": "Spell Augment Shield Slam Life Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 316,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Shield_Slam_Life_Leech"
+    },
+    {
+      "Id": 64,
+      "Name": "Spell Augment Shield Slam Mana Leech",
+      "Vocation": 1,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 316,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Shield_Slam_Mana_Leech"
+    },
+    {
+      "Id": 65,
+      "Name": "Spell Augment Divine Barrage Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 302,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Barrage_Base_Damage"
+    },
+    {
+      "Id": 66,
+      "Name": "Spell Augment Divine Barrage Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 302,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Barrage_Critical_Extra_Damage"
+    },
+    {
+      "Id": 67,
+      "Name": "Spell Augment Divine Barrage Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 302,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Barrage_Critical_Hit_Chance"
+    },
+    {
+      "Id": 68,
+      "Name": "Spell Augment Divine Barrage Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 302,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Barrage_Life_Leech"
+    },
+    {
+      "Id": 69,
+      "Name": "Spell Augment Divine Barrage Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 302,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Barrage_Mana_Leech"
+    },
+    {
+      "Id": 70,
+      "Name": "Spell Augment Divine Caldera Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 124,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Caldera_Base_Damage"
+    },
+    {
+      "Id": 71,
+      "Name": "Spell Augment Divine Caldera Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 124,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Caldera_Critical_Extra_Damage"
+    },
+    {
+      "Id": 72,
+      "Name": "Spell Augment Divine Caldera Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 124,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Caldera_Critical_Hit_Chance"
+    },
+    {
+      "Id": 73,
+      "Name": "Spell Augment Divine Caldera Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 124,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Caldera_Life_Leech"
+    },
+    {
+      "Id": 74,
+      "Name": "Spell Augment Divine Caldera Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 124,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Caldera_Mana_Leech"
+    },
+    {
+      "Id": 75,
+      "Name": "Spell Augment Divine Grenade Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 258,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Grenade_Base_Damage"
+    },
+    {
+      "Id": 76,
+      "Name": "Spell Augment Divine Grenade Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 258,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Grenade_Critical_Extra_Damage"
+    },
+    {
+      "Id": 77,
+      "Name": "Spell Augment Divine Grenade Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 258,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Grenade_Critical_Hit_Chance"
+    },
+    {
+      "Id": 78,
+      "Name": "Spell Augment Divine Grenade Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 258,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Grenade_Life_Leech"
+    },
+    {
+      "Id": 79,
+      "Name": "Spell Augment Divine Grenade Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 258,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Grenade_Mana_Leech"
+    },
+    {
+      "Id": 80,
+      "Name": "Spell Augment Divine Missile Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 122,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Missile_Base_Damage"
+    },
+    {
+      "Id": 81,
+      "Name": "Spell Augment Divine Missile Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 122,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Missile_Critical_Extra_Damage"
+    },
+    {
+      "Id": 82,
+      "Name": "Spell Augment Divine Missile Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 122,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Missile_Critical_Hit_Chance"
+    },
+    {
+      "Id": 83,
+      "Name": "Spell Augment Divine Missile Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 122,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Missile_Life_Leech"
+    },
+    {
+      "Id": 84,
+      "Name": "Spell Augment Divine Missile Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 122,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Divine_Missile_Mana_Leech"
+    },
+    {
+      "Id": 85,
+      "Name": "Spell Augment Ethereal Barrage Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 303,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ethereal_Barrage_Base_Damage"
+    },
+    {
+      "Id": 86,
+      "Name": "Spell Augment Ethereal Barrage Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 303,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ethereal_Barrage_Critical_Extra_Damage"
+    },
+    {
+      "Id": 87,
+      "Name": "Spell Augment Ethereal Barrage Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 303,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ethereal_Barrage_Critical_Hit_Chance"
+    },
+    {
+      "Id": 88,
+      "Name": "Spell Augment Ethereal Barrage Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 303,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ethereal_Barrage_Life_Leech"
+    },
+    {
+      "Id": 89,
+      "Name": "Spell Augment Ethereal Barrage Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 303,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ethereal_Barrage_Mana_Leech"
+    },
+    {
+      "Id": 90,
+      "Name": "Spell Augment Strong Ethereal Spear Base Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 57,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ethereal_Spear_Base_Damage"
+    },
+    {
+      "Id": 91,
+      "Name": "Spell Augment Strong Ethereal Spear Critical Extra Damage",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 57,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ethereal_Spear_Critical_Extra_Damage"
+    },
+    {
+      "Id": 92,
+      "Name": "Spell Augment Strong Ethereal Spear Critical Hit Chance",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 57,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ethereal_Spear_Critical_Hit_Chance"
+    },
+    {
+      "Id": 93,
+      "Name": "Spell Augment Strong Ethereal Spear Life Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 57,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ethereal_Spear_Life_Leech"
+    },
+    {
+      "Id": 94,
+      "Name": "Spell Augment Strong Ethereal Spear Mana Leech",
+      "Vocation": 2,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 57,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ethereal_Spear_Mana_Leech"
+    },
+    {
+      "Id": 95,
+      "Name": "Spell Augment Chained Penance Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 288,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Chained_Penance_Base_Damage"
+    },
+    {
+      "Id": 96,
+      "Name": "Spell Augment Chained Penance Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 288,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Chained_Penance_Critical_Extra_Damage"
+    },
+    {
+      "Id": 97,
+      "Name": "Spell Augment Chained Penance Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 288,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Chained_Penance_Critical_Hit_Chance"
+    },
+    {
+      "Id": 98,
+      "Name": "Spell Augment Chained Penance Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 288,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Chained_Penance_Life_Leech"
+    },
+    {
+      "Id": 99,
+      "Name": "Spell Augment Chained Penance Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 288,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Chained_Penance_Mana_Leech"
+    },
+    {
+      "Id": 100,
+      "Name": "Spell Augment Flurry of Blows Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 287,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Flurry_of_Blows_Base_Damage"
+    },
+    {
+      "Id": 101,
+      "Name": "Spell Augment Flurry of Blows Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 287,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Flurry_of_Blows_Critical_Extra_Damage"
+    },
+    {
+      "Id": 102,
+      "Name": "Spell Augment Flurry of Blows Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 287,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Flurry_of_Blows_Critical_Hit_Chance"
+    },
+    {
+      "Id": 103,
+      "Name": "Spell Augment Flurry of Blows Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 287,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Flurry_of_Blows_Life_Leech"
+    },
+    {
+      "Id": 104,
+      "Name": "Spell Augment Flurry of Blows Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 287,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Flurry_of_Blows_Mana_Leech"
+    },
+    {
+      "Id": 105,
+      "Name": "Spell Augment Greater Flurry of Blows Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 289,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.05,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Greater_Flurry_of_Blows_Base_Damage"
+    },
+    {
+      "Id": 106,
+      "Name": "Spell Augment Greater Flurry of Blows Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 289,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Greater_Flurry_of_Blows_Critical_Extra_Damage"
+    },
+    {
+      "Id": 107,
+      "Name": "Spell Augment Greater Flurry of Blows Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 289,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Greater_Flurry_of_Blows_Critical_Hit_Chance"
+    },
+    {
+      "Id": 108,
+      "Name": "Spell Augment Greater Flurry of Blows Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 289,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Greater_Flurry_of_Blows_Life_Leech"
+    },
+    {
+      "Id": 109,
+      "Name": "Spell Augment Greater Flurry of Blows Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 289,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Greater_Flurry_of_Blows_Mana_Leech"
+    },
+    {
+      "Id": 110,
+      "Name": "Spell Augment Mystic Repulse Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 290,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Mystic_Repulse_Base_Damage"
+    },
+    {
+      "Id": 111,
+      "Name": "Spell Augment Mystic Repulse Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 290,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Mystic_Repulse_Critical_Extra_Damage"
+    },
+    {
+      "Id": 112,
+      "Name": "Spell Augment Mystic Repulse Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 290,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Mystic_Repulse_Critical_Hit_Chance"
+    },
+    {
+      "Id": 113,
+      "Name": "Spell Augment Mystic Repulse Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 290,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Mystic_Repulse_Life_Leech"
+    },
+    {
+      "Id": 114,
+      "Name": "Spell Augment Mystic Repulse Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 290,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Mystic_Repulse_Mana_Leech"
+    },
+    {
+      "Id": 115,
+      "Name": "Spell Augment Sweeping Takedown Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 294,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Sweeping_Takedown_Base_Damage"
+    },
+    {
+      "Id": 116,
+      "Name": "Spell Augment Sweeping Takedown Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 294,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Sweeping_Takedown_Critical_Extra_Damage"
+    },
+    {
+      "Id": 117,
+      "Name": "Spell Augment Sweeping Takedown Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 294,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Sweeping_Takedown_Critical_Hit_Chance"
+    },
+    {
+      "Id": 118,
+      "Name": "Spell Augment Sweeping Takedown Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 294,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Sweeping_Takedown_Life_Leech"
+    },
+    {
+      "Id": 119,
+      "Name": "Spell Augment Sweeping Takedown Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 294,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Sweeping_Takedown_Mana_Leech"
+    },
+    {
+      "Id": 120,
+      "Name": "Spell Augment Thousand Fist Blows Base Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 301,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Thousand_Fist_Blows_Base_Damage"
+    },
+    {
+      "Id": 121,
+      "Name": "Spell Augment Thousand Fist Blows Critical Extra Damage",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 301,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Thousand_Fist_Blows_Critical_Extra_Damage"
+    },
+    {
+      "Id": 122,
+      "Name": "Spell Augment Thousand Fist Blows Critical Hit Chance",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 301,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Thousand_Fist_Blows_Critical_Hit_Chance"
+    },
+    {
+      "Id": 123,
+      "Name": "Spell Augment Thousand Fist Blows Life Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 301,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Thousand_Fist_Blows_Life_Leech"
+    },
+    {
+      "Id": 124,
+      "Name": "Spell Augment Thousand Fist Blows Mana Leech",
+      "Vocation": 16,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 301,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Thousand_Fist_Blows_Mana_Leech"
+    },
+    {
+      "Id": 125,
+      "Name": "Spell Augment Death Echo Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 310,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Death_Echo_Base_Damage"
+    },
+    {
+      "Id": 126,
+      "Name": "Spell Augment Death Echo Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 310,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Death_Echo_Critical_Extra_Damage"
+    },
+    {
+      "Id": 127,
+      "Name": "Spell Augment Death Echo Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 310,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Death_Echo_Critical_Hit_Chance"
+    },
+    {
+      "Id": 128,
+      "Name": "Spell Augment Death Echo Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 310,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Death_Echo_Life_Leech"
+    },
+    {
+      "Id": 129,
+      "Name": "Spell Augment Death Echo Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 310,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Death_Echo_Mana_Leech"
+    },
+    {
+      "Id": 130,
+      "Name": "Spell Augment Energy Wave Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 13,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Energy_Wave_Base_Damage"
+    },
+    {
+      "Id": 131,
+      "Name": "Spell Augment Energy Wave Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 13,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Energy_Wave_Critical_Extra_Damage"
+    },
+    {
+      "Id": 132,
+      "Name": "Spell Augment Energy Wave Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 13,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Energy_Wave_Critical_Hit_Chance"
+    },
+    {
+      "Id": 133,
+      "Name": "Spell Augment Energy Wave Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 13,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Energy_Wave_Life_Leech"
+    },
+    {
+      "Id": 134,
+      "Name": "Spell Augment Energy Wave Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 13,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Energy_Wave_Mana_Leech"
+    },
+    {
+      "Id": 135,
+      "Name": "Spell Augment Great Death Beam Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 260,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Death_Beam_Base_Damage"
+    },
+    {
+      "Id": 136,
+      "Name": "Spell Augment Great Death Beam Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 260,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Death_Beam_Critical_Extra_Damage"
+    },
+    {
+      "Id": 137,
+      "Name": "Spell Augment Great Death Beam Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 260,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Death_Beam_Critical_Hit_Chance"
+    },
+    {
+      "Id": 138,
+      "Name": "Spell Augment Great Death Beam Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 260,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Death_Beam_Life_Leech"
+    },
+    {
+      "Id": 139,
+      "Name": "Spell Augment Great Death Beam Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 260,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Death_Beam_Mana_Leech"
+    },
+    {
+      "Id": 140,
+      "Name": "Spell Augment Great Energy Beam Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 23,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Energy_Beam_Base_Damage"
+    },
+    {
+      "Id": 141,
+      "Name": "Spell Augment Great Energy Beam Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 23,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Energy_Beam_Critical_Extra_Damage"
+    },
+    {
+      "Id": 142,
+      "Name": "Spell Augment Great Energy Beam Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 23,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Energy_Beam_Critical_Hit_Chance"
+    },
+    {
+      "Id": 143,
+      "Name": "Spell Augment Great Energy Beam Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 23,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Energy_Beam_Life_Leech"
+    },
+    {
+      "Id": 144,
+      "Name": "Spell Augment Great Energy Beam Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 23,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Energy_Beam_Mana_Leech"
+    },
+    {
+      "Id": 145,
+      "Name": "Spell Augment Great Fire Wave Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 240,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Fire_Wave_Base_Damage"
+    },
+    {
+      "Id": 146,
+      "Name": "Spell Augment Great Fire Wave Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 240,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Fire_Wave_Critical_Extra_Damage"
+    },
+    {
+      "Id": 147,
+      "Name": "Spell Augment Great Fire Wave Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 240,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Fire_Wave_Critical_Hit_Chance"
+    },
+    {
+      "Id": 148,
+      "Name": "Spell Augment Great Fire Wave Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 240,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Fire_Wave_Life_Leech"
+    },
+    {
+      "Id": 149,
+      "Name": "Spell Augment Great Fire Wave Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 240,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Great_Fire_Wave_Mana_Leech"
+    },
+    {
+      "Id": 150,
+      "Name": "Spell Augment Hell\u2019s Core Base Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 24,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Hell%E2%80%99s_Core_Base_Damage"
+    },
+    {
+      "Id": 151,
+      "Name": "Spell Augment Hell\u2019s Core Critical Extra Damage",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 24,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Hell%E2%80%99s_Core_Critical_Extra_Damage"
+    },
+    {
+      "Id": 152,
+      "Name": "Spell Augment Hell\u2019s Core Critical Hit Chance",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 24,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Hell%E2%80%99s_Core_Critical_Hit_Chance"
+    },
+    {
+      "Id": 153,
+      "Name": "Spell Augment Hell\u2019s Core Life Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 24,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Hell%E2%80%99s_Core_Life_Leech"
+    },
+    {
+      "Id": 154,
+      "Name": "Spell Augment Hell\u2019s Core Mana Leech",
+      "Vocation": 4,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 24,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Hell%E2%80%99s_Core_Mana_Leech"
+    },
+    {
+      "Id": 155,
+      "Name": "Spell Augment Forked Glacier Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 317,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Glacier_Base_Damage"
+    },
+    {
+      "Id": 156,
+      "Name": "Spell Augment Forked Glacier Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 317,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Glacier_Critical_Extra_Damage"
+    },
+    {
+      "Id": 157,
+      "Name": "Spell Augment Forked Glacier Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 317,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Glacier_Critical_Hit_Chance"
+    },
+    {
+      "Id": 158,
+      "Name": "Spell Augment Forked Glacier Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 317,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Glacier_Life_Leech"
+    },
+    {
+      "Id": 159,
+      "Name": "Spell Augment Forked Glacier Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 317,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Glacier_Mana_Leech"
+    },
+    {
+      "Id": 160,
+      "Name": "Spell Augment Forked Thorns Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 318,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Thorns_Base_Damage"
+    },
+    {
+      "Id": 161,
+      "Name": "Spell Augment Forked Thorns Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 318,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Thorns_Critical_Extra_Damage"
+    },
+    {
+      "Id": 162,
+      "Name": "Spell Augment Forked Thorns Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 318,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Thorns_Critical_Hit_Chance"
+    },
+    {
+      "Id": 163,
+      "Name": "Spell Augment Forked Thorns Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 318,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Thorns_Life_Leech"
+    },
+    {
+      "Id": 164,
+      "Name": "Spell Augment Forked Thorns Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 318,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Forked_Thorns_Mana_Leech"
+    },
+    {
+      "Id": 165,
+      "Name": "Spell Augment Ice Burst Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 263,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ice_Burst_Base_Damage"
+    },
+    {
+      "Id": 166,
+      "Name": "Spell Augment Ice Burst Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 263,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ice_Burst_Critical_Extra_Damage"
+    },
+    {
+      "Id": 167,
+      "Name": "Spell Augment Ice Burst Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 263,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ice_Burst_Critical_Hit_Chance"
+    },
+    {
+      "Id": 168,
+      "Name": "Spell Augment Ice Burst Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 263,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ice_Burst_Life_Leech"
+    },
+    {
+      "Id": 169,
+      "Name": "Spell Augment Ice Burst Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 263,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Ice_Burst_Mana_Leech"
+    },
+    {
+      "Id": 170,
+      "Name": "Spell Augment Strong Ice Wave Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 43,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ice_Wave_Base_Damage"
+    },
+    {
+      "Id": 171,
+      "Name": "Spell Augment Strong Ice Wave Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 43,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ice_Wave_Critical_Extra_Damage"
+    },
+    {
+      "Id": 172,
+      "Name": "Spell Augment Strong Ice Wave Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 43,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ice_Wave_Critical_Hit_Chance"
+    },
+    {
+      "Id": 173,
+      "Name": "Spell Augment Strong Ice Wave Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 43,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ice_Wave_Life_Leech"
+    },
+    {
+      "Id": 174,
+      "Name": "Spell Augment Strong Ice Wave Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 43,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Strong_Ice_Wave_Mana_Leech"
+    },
+    {
+      "Id": 175,
+      "Name": "Spell Augment Terra Burst Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 262,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Burst_Base_Damage"
+    },
+    {
+      "Id": 176,
+      "Name": "Spell Augment Terra Burst Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 262,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Burst_Critical_Extra_Damage"
+    },
+    {
+      "Id": 177,
+      "Name": "Spell Augment Terra Burst Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 262,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Burst_Critical_Hit_Chance"
+    },
+    {
+      "Id": 178,
+      "Name": "Spell Augment Terra Burst Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 262,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Burst_Life_Leech"
+    },
+    {
+      "Id": 179,
+      "Name": "Spell Augment Terra Burst Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 262,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Burst_Mana_Leech"
+    },
+    {
+      "Id": 180,
+      "Name": "Spell Augment Terra Wave Base Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 120,
+        "AugmentType": 2,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Wave_Base_Damage"
+    },
+    {
+      "Id": 181,
+      "Name": "Spell Augment Terra Wave Critical Extra Damage",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 120,
+        "AugmentType": 16,
+        "Value": 0.05
+      },
+      "MaximumValue": 0.2,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Wave_Critical_Extra_Damage"
+    },
+    {
+      "Id": 182,
+      "Name": "Spell Augment Terra Wave Critical Hit Chance",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 120,
+        "AugmentType": 17,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.03,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Wave_Critical_Hit_Chance"
+    },
+    {
+      "Id": 183,
+      "Name": "Spell Augment Terra Wave Life Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 120,
+        "AugmentType": 14,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.12,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Wave_Life_Leech"
+    },
+    {
+      "Id": 184,
+      "Name": "Spell Augment Terra Wave Mana Leech",
+      "Vocation": 8,
+      "Perk": {
+        "Type": 5,
+        "SpellId": 120,
+        "AugmentType": 15,
+        "Value": 0.01
+      },
+      "MaximumValue": 0.06,
+      "Source": "https://www.tibiawiki.com.br/wiki/Spell_Augment_Terra_Wave_Mana_Leech"
+    }
+  ]
+}

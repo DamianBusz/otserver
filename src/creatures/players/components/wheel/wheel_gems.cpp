@@ -154,7 +154,7 @@ void WheelModifierContext::addStrategies(WheelGemBasicModifier_t modifier, uint8
 			m_strategies.emplace_back(std::make_unique<GemModifierResistanceStrategy>(m_wheel, CombatType_t::COMBAT_LIFEDRAIN, 150 * gradeMultiplier));
 			break;
 		case WheelGemBasicModifier_t::General_MitigationMultiplier:
-			m_strategies.emplace_back(std::make_unique<GemModifierStatStrategy>(m_wheel, WheelStat_t::MITIGATION, 500 * gradeMultiplier));
+			m_strategies.emplace_back(std::make_unique<GemModifierStatStrategy>(m_wheel, WheelStat_t::MITIGATION, 2000 * gradeMultiplier));
 			break;
 
 		case WheelGemBasicModifier_t::Vocation_Health:
@@ -308,7 +308,7 @@ void WheelModifierContext::addStrategies(WheelGemSupremeModifier_t modifier, uin
 			m_strategies.emplace_back(std::make_unique<GemModifierRevelationStrategy>(m_wheel, WheelGemAffinity_t::Purple, 150 * gradeMultiplier));
 			m_wheel.addRevelationBonus(WheelGemAffinity_t::Purple, 150 * gradeMultiplier);
 			break;
-		case WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_DrainBody:
+		case WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_LordOfDestruction:
 			m_strategies.emplace_back(std::make_unique<GemModifierRevelationStrategy>(m_wheel, WheelGemAffinity_t::Blue, 150 * gradeMultiplier));
 			m_wheel.addRevelationBonus(WheelGemAffinity_t::Blue, 150 * gradeMultiplier);
 			break;
@@ -369,7 +369,7 @@ void WheelModifierContext::addStrategies(WheelGemSupremeModifier_t modifier, uin
 			m_strategies.emplace_back(std::make_unique<GemModifierSpellBonusStrategy>(m_wheel, "Front Sweep", bonus));
 			break;
 		case WheelGemSupremeModifier_t::Knight_Groundshaker_DamageIncrease:
-			bonus.increase.damage = static_cast<int>(std::round(6.5 * gradeMultiplier));
+			bonus.increase.damage = 6.5 * gradeMultiplier;
 			m_strategies.emplace_back(std::make_unique<GemModifierSpellBonusStrategy>(m_wheel, "Groundshaker", bonus));
 			break;
 		case WheelGemSupremeModifier_t::Knight_Groundshaker_CriticalExtraDamage:

@@ -1260,7 +1260,7 @@ test("weekly expansion fills both active assignment groups", function()
 	assert_true(succeeded, failure)
 end)
 
-test("reroll tokens replace only available bounty options", function()
+test("reroll tokens replace available and active bounties but preserve completed rewards", function()
 	local originalGenerateBounty = api.rules.generateBounty
 	local generationCalls = 0
 	api.rules.generateBounty = function(_, state)
@@ -1277,27 +1277,88 @@ test("reroll tokens replace only available bounty options", function()
 		state.bounty.tasks = {
 			{ raceId = 100, required = 100, current = 37, state = api.taskState.selected },
 		}
-		assert_equal(false, api.rules.rerollBounty(player, state))
-		assert_equal(2, state.bounty.dailyRerolls)
-		assert_equal(0, generationCalls)
+		assert_equal(true, api.rules.rerollBounty(player, state))
+		assert_equal(1, state.bounty.dailyRerolls)
+		assert_equal(1, generationCalls)
+		assert_equal(103, state.bounty.tasks[1].raceId)
+		assert_equal(0, state.bounty.tasks[1].current)
+		assert_equal(api.taskState.notSelected, state.bounty.tasks[1].state)
 
 		state.bounty.tasks[1].current = 100
 		state.bounty.tasks[1].state = api.taskState.completed
 		assert_equal(false, api.rules.rerollBounty(player, state))
-		assert_equal(2, state.bounty.dailyRerolls)
-		assert_equal(0, generationCalls)
+		assert_equal(1, state.bounty.dailyRerolls)
+		assert_equal(1, generationCalls)
 
 		state.bounty.tasks = {
 			{ raceId = 100, required = 100, current = 0, state = api.taskState.notSelected },
 			{ raceId = 101, required = 100, current = 0, state = api.taskState.notSelected },
 		}
 		assert_equal(true, api.rules.rerollBounty(player, state))
-		assert_equal(1, state.bounty.dailyRerolls)
-		assert_equal(1, generationCalls)
+		assert_equal(0, state.bounty.dailyRerolls)
+		assert_equal(2, generationCalls)
 		assert_equal(103, state.bounty.tasks[1].raceId)
+		assert_equal(false, api.rules.rerollBounty(player, state))
+		assert_equal(0, state.bounty.dailyRerolls)
+		assert_equal(2, generationCalls)
+
+		state.bounty.dailyRerolls = 1
+		state.bounty.tasks = {}
+		assert_equal(false, api.rules.rerollBounty(player, state))
+		assert_equal(1, state.bounty.dailyRerolls)
+		assert_equal(2, generationCalls)
 	end)
 
 	api.rules.generateBounty = originalGenerateBounty
+	assert_true(succeeded, failure)
+end)
+
+test("claiming the daily reroll replaces a selected bounty through client actions", function()
+	local originalStorage, originalMessages = storage, sentMessages
+	local originalOverlays, originalRefreshes = player.raceIconOverlays, player.iconRefreshes
+	storage, sentMessages, player.raceIconOverlays = {}, {}, {}
+	local succeeded, failure = pcall(function()
+		local state = api.state.ensure(player)
+		api.actions.handle(player, makeReader({ api.action.selectBounty, 0 }))
+		state = api.state.load(player)
+		local oldRaceId = state.bounty.tasks[1].raceId
+		state.bounty.tasks[1].current = 1
+		assert_true(api.state.save(player, state))
+		assert_true(player.raceIconOverlays[oldRaceId][api.creatureIcon.bountyTaskMonster])
+
+		api.actions.handle(player, makeReader({ api.action.claimDailyReroll }))
+		state = api.state.load(player)
+		assert_equal(1, state.bounty.dailyRerolls)
+		assert_equal(api.taskState.selected, state.bounty.tasks[1].state)
+		assert_equal(1, state.bounty.tasks[1].current)
+		local claimTime = state.bounty.lastRerollClaim
+		api.actions.handle(player, makeReader({ api.action.claimDailyReroll }))
+		assert_equal(1, api.state.load(player).bounty.dailyRerolls)
+
+		sentMessages = {}
+		local refreshes = player.iconRefreshes
+		local experience = player.experience
+		local points = state.general.bountyPoints
+		api.actions.handle(player, makeReader({ api.action.rerollBounty }))
+		state = api.state.load(player)
+		assert_equal(0, state.bounty.dailyRerolls)
+		assert_equal(claimTime, state.bounty.lastRerollClaim)
+		assert_equal(api.rerollState.claimed, api.rules.getRerollState(state))
+		assert_equal(api.config.bounty.slotCount, #state.bounty.tasks)
+		for _, task in ipairs(state.bounty.tasks) do
+			assert_equal(api.taskState.notSelected, task.state)
+			assert_equal(0, task.current)
+		end
+		assert_equal(experience, player.experience)
+		assert_equal(points, state.general.bountyPoints)
+		assert_equal(nil, player.raceIconOverlays[oldRaceId])
+		assert_equal(refreshes + 1, player.iconRefreshes)
+		assert_equal(api.packet.serverTaskboard, sentMessages[1].events[1].value)
+		assert_equal(api.window.bounty, sentMessages[1].events[2].value)
+		assert_equal(#state.bounty.tasks, sentMessages[1].events[3].value)
+	end)
+	storage, sentMessages = originalStorage, originalMessages
+	player.raceIconOverlays, player.iconRefreshes = originalOverlays, originalRefreshes
 	assert_true(succeeded, failure)
 end)
 

@@ -7,9 +7,11 @@
  * Website: https://docs.opentibiabr.com/
  */
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
+#ifndef USE_PRECOMPILED_HEADERS
+	#include <algorithm>
+	#include <cmath>
+	#include <limits>
+#endif
 
 // Player.hpp already includes the weapon
 #include "creatures/players/player.hpp"
@@ -27,6 +29,7 @@
 #include "kv/value_wrapper.hpp"
 
 #include "kv/kv.hpp"
+#include "map/spectators.hpp"
 
 namespace AugmentType {
 	constexpr uint8_t DAMAGE = 2;
@@ -42,6 +45,22 @@ namespace {
 	constexpr int32_t MIN_TRACKED_SKILL = static_cast<int32_t>(SKILL_FIRST);
 	constexpr int32_t MAX_TRACKED_SKILL = static_cast<int32_t>(SKILL_MAGLEVEL);
 	constexpr size_t MASTERY_EXPERIENCE_OFFSET = 2;
+
+	void applySkillBonus(CombatDamage &damage, double bonus, bool autoAttack) {
+		if (!std::isfinite(bonus) || bonus <= 0) {
+			return;
+		}
+		const auto rounded = std::ceil(bonus);
+		for (auto *component : { &damage.primary, &damage.secondary }) {
+			if (component->type == COMBAT_NONE) {
+				continue;
+			}
+			const auto delta = autoAttack || component->value < 0 ? -rounded : rounded;
+			const auto total = static_cast<double>(component->value) + delta;
+			component->value = static_cast<int32_t>(std::clamp(total, static_cast<double>(INT32_MIN), static_cast<double>(INT32_MAX)));
+		}
+	}
+
 
 	[[nodiscard]] bool isTrackedWeaponProficiencySkill(skills_t skill) {
 		const auto enumValue = static_cast<int32_t>(skill);
@@ -134,12 +153,24 @@ static void registerPerks(const nlohmann::json &perksJson, ProficiencyLevel &pro
 
 		ProficiencyPerk proficiencyPerk;
 		proficiencyPerk.type = perkJson["Type"].get<WeaponProficiencyBonus_t>();
-		proficiencyPerk.value = perkJson["Value"].get<double_t>();
+		proficiencyPerk.highestCombatSkill = perkJson.value("HighestCombatSkill", false);
+		if (proficiencyPerk.type == HOMING_MISSILE) {
+			// The official missile schema has no Value; its fields are independent.
+			proficiencyPerk.probability = perkJson.at("Probability").get<double_t>();
+			proficiencyPerk.multiplier = perkJson.at("Multiplier").get<double_t>();
+			proficiencyPerk.missileId = perkJson.at("MissileId").get<uint16_t>();
+			if (!std::isfinite(proficiencyPerk.probability) || proficiencyPerk.probability < 0 || proficiencyPerk.probability > 1
+			    || !std::isfinite(proficiencyPerk.multiplier) || proficiencyPerk.multiplier < 0) {
+				throw FailedToInitializeCanary("Invalid homing missile probability or multiplier");
+			}
+		} else {
+			proficiencyPerk.value = perkJson.at("Value").get<double_t>();
+		}
 
 		uint64_t shiftedValue = 0;
 		if (proficiencyPerk.type == SPECIALIZED_MAGIC_LEVEL) {
 			shiftedValue = perkJson["DamageType"].get<uint64_t>();
-		} else if (proficiencyPerk.type == ELEMENTAL_HIT_CHANCE || proficiencyPerk.type == ELEMENTAL_CRITICAL_EXTRA_DAMAGE || proficiencyPerk.type == ELEMENTAL_PIERCE) {
+		} else if (proficiencyPerk.type == ELEMENTAL_HIT_CHANCE || proficiencyPerk.type == ELEMENTAL_CRITICAL_EXTRA_DAMAGE || proficiencyPerk.type == ELEMENTAL_PIERCE || proficiencyPerk.type == HOMING_MISSILE) {
 			shiftedValue = perkJson["ElementId"].get<uint64_t>();
 		}
 
@@ -242,9 +273,37 @@ bool WeaponProficiency::loadFromJson(bool reload /* = false */) {
 		throw FailedToInitializeCanary(fmt::format("{} - JSON exception in file '{}': {}", __FUNCTION__, folder, e.what()));
 	}
 
+	if (!loadShapingFromJson()) {
+		throw FailedToInitializeCanary("Invalid proficiency shaping catalog");
+	}
 	g_logger().info("Weapon proficiencies loaded!");
 
 	return true;
+}
+
+bool WeaponProficiency::loadShapingFromJson() {
+ std::ifstream file(fmt::format("{}/items/proficiency-shaping.json", g_configManager().getString(CORE_DIRECTORY)));
+ if (!file.is_open()) return false;
+ const auto catalog = nlohmann::json::parse(file, nullptr, false);
+ if (!catalog.is_object() || !catalog.contains("perks") || !catalog["perks"].is_array()) return false;
+ std::map<uint16_t, ShapeDefinition> loaded;
+ for (const auto &entry : catalog["perks"]) {
+  ProficiencyLevel level;
+  registerPerks(nlohmann::json::array({entry.at("Perk")}), level);
+  if (level.perks.size() != 1) return false;
+  ShapeDefinition definition;
+  definition.id = entry.at("Id").get<uint16_t>();
+  definition.vocation = entry.at("Vocation").get<uint8_t>();
+  definition.perk = level.perks.front();
+  definition.maximum = entry.at("MaximumValue").get<double>();
+  definition.client = entry;
+  definition.client.erase("Source");
+  if (definition.id == 0 || !std::isfinite(definition.maximum) || !std::isfinite(definition.perk.value) || definition.perk.value < 0 || definition.maximum < definition.perk.value || loaded.contains(definition.id)) return false;
+  loaded.emplace(definition.id, std::move(definition));
+ }
+ if (loaded.empty()) return false;
+ shapeDefinitions = std::move(loaded);
+ return true;
 }
 
 void WeaponProficiency::load() {
@@ -353,6 +412,9 @@ WeaponProficiencyData WeaponProficiency::deserialize(const ValueWrapper &val) {
 		weaponData.perks = deserializePerks(perksIt->second->getVariant());
 	}
 
+	if (auto shapes = map.find("shaping"); shapes != map.end()) {
+		deserializeShapes(weaponData, shapes->second->get<StringType>());
+	}
 	return weaponData;
 }
 
@@ -386,6 +448,7 @@ ProficiencyPerk WeaponProficiency::deserializePerk(const ValueWrapper &val) {
 		return 0;
 	};
 
+	if (auto highest = map.find("highestCombatSkill"); highest != map.end()) perk.highestCombatSkill = highest->second->get<BooleanType>();
 	perk.index = static_cast<uint8_t>(getInt("index"));
 	perk.type = static_cast<WeaponProficiencyBonus_t>(getInt("type"));
 	if (auto it = map.find("value"); it != map.end()) {
@@ -401,6 +464,13 @@ ProficiencyPerk WeaponProficiency::deserializePerk(const ValueWrapper &val) {
 	perk.range = static_cast<uint8_t>(getInt("range"));
 	perk.skillId = static_cast<skills_t>(getInt("skillId"));
 	perk.spellId = static_cast<uint16_t>(getInt("spellId"));
+	perk.missileId = static_cast<uint16_t>(getInt("missileId"));
+	if (auto it = map.find("probability"); it != map.end()) {
+		perk.probability = it->second->get<DoubleType>();
+	}
+	if (auto it = map.find("multiplier"); it != map.end()) {
+		perk.multiplier = it->second->get<DoubleType>();
+	}
 
 	return perk;
 }
@@ -410,6 +480,7 @@ ValueWrapper WeaponProficiency::serialize(const WeaponProficiencyData &weaponDat
 		std::pair<const std::string, ValueWrapper> { "experience", ValueWrapper(static_cast<IntType>(weaponData.experience)) },
 		std::pair<const std::string, ValueWrapper> { "mastered", ValueWrapper(weaponData.mastered) },
 		std::pair<const std::string, ValueWrapper> { "perks", serializePerks(weaponData.perks) },
+		std::pair<const std::string, ValueWrapper> { "shaping", serializeShapes(weaponData) },
 	};
 }
 
@@ -426,6 +497,10 @@ ValueWrapper WeaponProficiency::serializePerk(const ProficiencyPerk &perk) const
 		{ "range", static_cast<IntType>(perk.range) },
 		{ "skillId", static_cast<IntType>(perk.skillId) },
 		{ "spellId", static_cast<IntType>(perk.spellId) },
+		{ "missileId", static_cast<IntType>(perk.missileId) },
+		{ "highestCombatSkill", perk.highestCombatSkill },
+		{ "probability", perk.probability },
+		{ "multiplier", perk.multiplier },
 	};
 }
 
@@ -509,6 +584,9 @@ void WeaponProficiency::applyPerks(uint16_t weaponId, bool sendSkillUpdate /* = 
 			case SKILL_PERCENTAGE_SPELL_HEALING:
 				applySkillPercentageBonus(selectedPerk);
 				break;
+			case HOMING_MISSILE:
+				// Evaluated from the current selected tree once after a successful cast.
+				break;
 			default:
 				addStat(selectedPerk.type, selectedPerk.value);
 				break;
@@ -565,7 +643,15 @@ void WeaponProficiency::applySkillPercentageBonus(const ProficiencyPerk &perk) {
 		default:
 			return;
 	}
-	addSkillPercentage(perk.skillId, type, perk.value);
+	if (perk.highestCombatSkill) {
+  switch (type) {
+   case AutoAttack: m_highestSkillPercentage.autoAttack += perk.value; break;
+   case SpellDamage: m_highestSkillPercentage.spellDamage += perk.value; break;
+   case SpellHealing: m_highestSkillPercentage.spellHealing += perk.value; break;
+  }
+ } else {
+  addSkillPercentage(perk.skillId, type, perk.value);
+ }
 }
 
 std::vector<ProficiencyPerk> WeaponProficiency::getSelectedPerks(uint16_t weaponId) const {
@@ -937,7 +1023,7 @@ std::vector<ProficiencyPerk> WeaponProficiency::collectValidSelectedPerks(uint16
 			continue;
 		}
 
-		validPerks.push_back(levelPerks[index]);
+		validPerks.push_back(shapedPerk(weaponId, levelPerks[index]));
 		usedLevels[level] = true;
 	}
 
@@ -971,6 +1057,7 @@ void WeaponProficiency::normalizeStoredState(uint16_t weaponId) {
 		playerProficiencyIt->second.mastered = playerProficiencyIt->second.experience >= maxExperience;
 	}
 
+	normalizeShapes(weaponId);
 	playerProficiencyIt->second.perks = collectValidSelectedPerks(weaponId);
 }
 
@@ -1326,19 +1413,9 @@ void WeaponProficiency::applySkillAutoAttackPercentage(CombatDamage &damage) con
 		return;
 	}
 
+	applySkillBonus(damage, highestCombatSkill() * m_highestSkillPercentage.autoAttack, true);
 	for (const auto &[skill, skillPercentage] : m_skillPercentages) {
-		if (skillPercentage.autoAttack <= 0) {
-			continue;
-		}
-
-		const auto bonusDamage = m_player.getSkillLevel(skill) * skillPercentage.autoAttack;
-
-		if (damage.primary.type != COMBAT_NONE) {
-			damage.primary.value -= std::ceil(bonusDamage);
-		}
-		if (damage.secondary.type != COMBAT_NONE) {
-			damage.secondary.value -= std::ceil(bonusDamage);
-		}
+		applySkillBonus(damage, m_player.getSkillLevel(skill) * skillPercentage.autoAttack, true);
 	}
 }
 
@@ -1349,7 +1426,9 @@ void WeaponProficiency::applySkillSpellPercentage(CombatDamage &damage, bool hea
 		return;
 	}
 
-	if (healing && damage.primary.type != COMBAT_HEALING) {
+	// Spell damage and spell healing perks are separate channels. The caller
+	// evaluates both, so neither channel may contribute to the other's combat.
+	if ((damage.primary.type == COMBAT_HEALING) != healing) {
 		return;
 	}
 
@@ -1358,20 +1437,10 @@ void WeaponProficiency::applySkillSpellPercentage(CombatDamage &damage, bool hea
 		return;
 	}
 
+	applySkillBonus(damage, highestCombatSkill() * (healing ? m_highestSkillPercentage.spellHealing : m_highestSkillPercentage.spellDamage), false);
 	for (const auto &[skill, skillPercentage] : m_skillPercentages) {
-		const auto skillPercentageValue = healing ? skillPercentage.spellHealing : skillPercentage.spellDamage;
-		if (skillPercentageValue <= 0) {
-			continue;
-		}
-
-		const auto bonusDamage = std::ceil(m_player.getSkillLevel(skill) * skillPercentageValue);
-
-		if (damage.primary.type != COMBAT_NONE) {
-			damage.primary.value += (damage.primary.value < 0 ? -bonusDamage : bonusDamage);
-		}
-		if (damage.secondary.type != COMBAT_NONE) {
-			damage.secondary.value += (damage.secondary.value < 0 ? -bonusDamage : bonusDamage);
-		}
+		const auto value = healing ? skillPercentage.spellHealing : skillPercentage.spellDamage;
+		applySkillBonus(damage, m_player.getSkillLevel(skill) * value, false);
 	}
 }
 
@@ -1410,13 +1479,77 @@ void WeaponProficiency::applyOn(WeaponProficiencyHealth_t healthType, WeaponProf
 
 void WeaponProficiency::applySpellAugment(CombatDamage &damage, uint16_t spellId) const {
 	if (auto it = m_spellsBonuses.find(spellId); it != m_spellsBonuses.end()) {
-		damage.damageMultiplier += static_cast<int32_t>(std::lround(it->second.increase.damage * 100));
+		damage.damageMultiplier += it->second.increase.damage * 100.0;
 		damage.healingMultiplier += static_cast<int32_t>(std::lround(it->second.increase.heal * 100));
 		damage.criticalChance += it->second.increase.criticalChance * 10000;
 		damage.criticalDamage += it->second.increase.criticalDamage * 10000;
 		damage.lifeLeech += it->second.leech.life * 10000;
 		damage.manaLeech += it->second.leech.mana * 10000;
 	}
+}
+
+int32_t WeaponProficiency::homingMissileDamage(uint32_t level, double multiplier) {
+	if (!std::isfinite(multiplier) || multiplier <= 0) {
+		return 0;
+	}
+	const auto amount = std::min(static_cast<double>(level) * multiplier, static_cast<double>(std::numeric_limits<int32_t>::max()));
+	return -static_cast<int32_t>(amount);
+}
+
+bool WeaponProficiency::tryHomingMissile() const {
+	const auto caster = m_player.getPlayer();
+	if (!caster || caster->isRemoved() || caster->getHealth() <= 0 || g_game().getGameState() == GAME_STATE_SHUTDOWN) {
+		return false;
+	}
+	// Resolve the selected tree now, so unequipping or changing perks cannot leave
+	// a cached missile bonus active. There is one roll per successful offensive cast.
+	const auto perks = getSelectedPerks(m_player.getWeaponId(true));
+	for (const auto &perk : perks) {
+		if (perk.type != WeaponProficiencyBonus_t::HOMING_MISSILE || perk.element == COMBAT_NONE
+		    || perk.probability <= 0 || uniform_random(1, 10000) > perk.probability * 10000) {
+			continue;
+		}
+		const auto origin = caster->getPosition();
+		CreatureVector candidates;
+		for (const auto &candidate : Spectators().find<Creature>(origin, false, 7, 7, 5, 5)) {
+			if (candidate == caster || candidate->isRemoved() || candidate->getHealth() <= 0 || !candidate->isAttackable()
+			    || candidate->isInGhostMode() || !caster->canSeeCreature(candidate)
+			    || !g_game().canThrowObjectTo(origin, candidate->getPosition(), SightLine_CheckSightLineAndFloor)
+			    || Combat::canTargetCreature(caster, candidate) != RETURNVALUE_NOERROR) {
+				continue;
+			}
+			candidates.push_back(candidate);
+		}
+		if (candidates.empty()) {
+			return false;
+		}
+		const auto target = candidates[uniform_random(0, static_cast<int32_t>(candidates.size() - 1))];
+		CombatDamage missile;
+		missile.origin = ORIGIN_WEAPON_PROFICIENCY;
+		missile.extension = true;
+		missile.suppressCharms = true;
+		missile.primary.type = perk.element;
+		missile.primary.value = homingMissileDamage(m_player.getLevel(), perk.multiplier);
+		// This fixed, level-based extension deliberately bypasses spell/weapon
+		// bonuses, but retains the same player-target reduction as normal combat.
+		if (const auto targetPlayer = target->getPlayer(); targetPlayer && targetPlayer->getSkull() != SKULL_BLACK) {
+			missile.primary.value /= 2;
+		}
+		missile.exString = " (homing missile)";
+		if (missile.primary.value == 0 || g_game().combatBlockHit(missile, caster, target, false, false, false)) {
+			return false;
+		}
+		// Blocking can invoke scripts. Recheck both retained objects before output
+		// or damage; no timer or raw owner pointer escapes this synchronous call.
+		if (caster->isRemoved() || caster->getHealth() <= 0 || target->isRemoved() || target->getHealth() <= 0
+		    || !g_game().canThrowObjectTo(caster->getPosition(), target->getPosition(), SightLine_CheckSightLineAndFloor)
+		    || Combat::canTargetCreature(caster, target) != RETURNVALUE_NOERROR) {
+			return false;
+		}
+		g_game().addDistanceEffect(caster->getPosition(), target->getPosition(), perk.missileId, caster);
+		return g_game().combatChangeHealth(caster, target, missile);
+	}
+	return false;
 }
 
 std::vector<std::pair<std::string, double>> WeaponProficiency::getActiveBestiariesDamage() const {
@@ -1493,6 +1626,7 @@ void WeaponProficiency::clearAllStats() {
 	resetBestiaryDamage();
 
 	m_skillPercentages.clear();
+	m_highestSkillPercentage.clear();
 	m_autoAttackCritical.clear();
 	m_runesCritical.clear();
 	m_generalCritical.clear();

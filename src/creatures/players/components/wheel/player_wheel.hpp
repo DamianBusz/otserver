@@ -197,7 +197,7 @@ public:
 		};
 
 		for (const auto &spellBonus : vocSpells) {
-			if (spellBonus.name != spellName) {
+			if (!WheelSpells::matchesSpell(spellBonus.name, spellName)) {
 				continue;
 			}
 
@@ -210,8 +210,8 @@ public:
 			addValue(Augment_t::BaseHealing, bonus.increase.heal / 100.0);
 			addValue(Augment_t::DurationIncreased, bonus.increase.duration);
 			addValue(Augment_t::AdditionalTargets, bonus.increase.additionalTarget);
-			addValue(Augment_t::Cooldown, -(bonus.decrease.cooldown / 1000.0));
-			addValue(Augment_t::SecondaryGroupCooldown, -(bonus.decrease.secondaryGroupCooldown / 1000.0));
+			addValue(Augment_t::Cooldown, -bonus.decrease.cooldown);
+			addValue(Augment_t::SecondaryGroupCooldown, -bonus.decrease.secondaryGroupCooldown);
 			addValue(Augment_t::AffectedAreaEnlarged, bonus.increase.area);
 			addValue(Augment_t::IncreasedDamageReduction, bonus.increase.damageReduction / 100.0);
 			addValue(Augment_t::LifeLeech, bonus.leech.life / 100.0);
@@ -293,12 +293,10 @@ public:
 	bool checkBattleInstinct();
 	bool checkPositionalTactics();
 	bool checkBallisticMastery();
-	bool checkCombatMastery();
 	bool checkDivineEmpowerment();
 	int32_t checkDrainBodyLeech(const std::shared_ptr<Creature> &target, skills_t skill) const;
 	int32_t checkBeamMasteryDamage() const;
-	int32_t checkBattleHealingAmount() const;
-	int32_t checkBlessingGroveHealingByTarget(const std::shared_ptr<Creature> &target) const;
+	double checkBlessingGroveHealingByTarget(const std::shared_ptr<Creature> &target) const;
 	int32_t checkTwinBurstByTarget(const std::shared_ptr<Creature> &target) const;
 	int32_t checkExecutionersThrow(const std::shared_ptr<Creature> &target) const;
 	int32_t checkDivineGrenade(const std::shared_ptr<Creature> &target) const;
@@ -435,17 +433,8 @@ public:
 
 	// Combat functions
 	uint8_t getBeamAffectedTotal(const CombatDamage &tmpDamage) const;
-	void updateBeamMasteryDamage(CombatDamage &tmpDamage, uint8_t &beamAffectedTotal, uint8_t &beamAffectedCurrent) const;
-	/**
-	 * @brief Checks if the player has the "Battle Healing" instant active and, if so, heals the player.
-	 *
-	 * This function checks if a creature is a player and if the player is not removed from the game world.
-	 * If the player has the "Battle Healing" instant active, the player is healed by an amount defined by the
-	 * checkBattleHealingAmount() function.
-	 *
-	 * @param creature The creature to check and potentially heal.
-	 */
-	void healIfBattleHealingActive() const;
+	int getBattleHealingPercent() const;
+	double getCombatMasteryPercent(const Creature &healthOwner, bool incoming) const;
 	/**
 	 * @brief Adjusts the incoming damage based on the player's resistance and avatar skill.
 	 *
@@ -476,7 +465,7 @@ public:
 	void resetRevelationBonus();
 	void addSpellBonus(const std::string &spellName, const WheelSpells::Bonus &bonus);
 
-	int32_t getSpellBonus(const std::string &spellName, WheelSpellBoost_t boost) const;
+	double getSpellBonus(const std::string &spellName, WheelSpellBoost_t boost) const;
 
 	WheelGemBasicModifier_t selectBasicModifier2(WheelGemBasicModifier_t modifier1) const;
 

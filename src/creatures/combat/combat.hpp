@@ -107,6 +107,7 @@ struct CombatParams {
 	bool useCharges = false;
 
 	uint16_t chainEffect = CONST_ME_NONE;
+	uint8_t nextAttackReduction = 0;
 };
 
 using CombatFunction = std::function<void(std::shared_ptr<Creature>, std::shared_ptr<Creature>, const CombatParams &, CombatDamage*)>;
@@ -177,6 +178,7 @@ private:
 
 class Combat {
 public:
+	static uint16_t convertedImpact(uint16_t original, CombatType_t element);
 	Combat() = default;
 
 	// non-copyable
@@ -207,7 +209,7 @@ public:
 	static ReturnValue canTargetCreature(const std::shared_ptr<Player> &attacker, const std::shared_ptr<Creature> &target);
 	static ReturnValue canDoCombat(const std::shared_ptr<Creature> &caster, const std::shared_ptr<Tile> &tile, bool aggressive);
 	static ReturnValue canDoCombat(const std::shared_ptr<Creature> &attacker, const std::shared_ptr<Creature> &target, bool aggressive);
-	static void postCombatEffects(const std::shared_ptr<Creature> &caster, const Position &origin, const Position &pos, const CombatParams &params);
+	static void postCombatEffects(const std::shared_ptr<Creature> &caster, const Position &origin, const Position &pos, const CombatParams &params, CombatType_t convertedElement = COMBAT_NONE);
 
 	static void addDistanceEffect(const std::shared_ptr<Creature> &caster, const Position &fromPos, const Position &toPos, uint16_t effect);
 
@@ -243,6 +245,8 @@ public:
 	void setRuneSpellName(const std::string &value);
 
 	void setupChain(const std::shared_ptr<Weapon> &weapon);
+	static std::shared_ptr<Creature> selectForkedTarget(const std::shared_ptr<Player> &caster, const std::shared_ptr<Creature> &selected, bool acquireNearest);
+	bool doCombatForked(const std::shared_ptr<Creature> &caster, const std::shared_ptr<Creature> &target) const;
 	bool doCombatChain(const std::shared_ptr<Creature> &caster, const std::shared_ptr<Creature> &target, bool aggressive) const;
 
 	/**
@@ -328,7 +332,7 @@ private:
 	 */
 	static void sendCombatEffect(const std::shared_ptr<Creature> &caster, const Position &position, uint16_t effect);
 
-	static void combatTileEffects(const CreatureVector &spectators, const std::shared_ptr<Creature> &caster, const std::shared_ptr<Tile> &tile, const CombatParams &params);
+	static void combatTileEffects(const CreatureVector &spectators, const std::shared_ptr<Creature> &caster, const std::shared_ptr<Tile> &tile, const CombatParams &params, CombatType_t convertedElement = COMBAT_NONE);
 
 	/**
 	 * @brief Calculate the level formula for combat.

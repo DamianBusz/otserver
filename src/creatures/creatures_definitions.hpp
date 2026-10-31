@@ -308,6 +308,7 @@ enum CombatParam_t {
 	COMBAT_PARAM_CASTSOUND,
 	COMBAT_PARAM_IMPACTSOUND,
 	COMBAT_PARAM_CHAIN_EFFECT,
+	COMBAT_PARAM_NEXTATTACKREDUCTION,
 };
 
 enum CombatOrigin : uint8_t {
@@ -771,6 +772,7 @@ enum SpellGroup_t : uint8_t {
 	SPELLGROUP_BURSTS_OF_NATURE = 9,
 	SPELLGROUP_GREAT_BEAMS = 10,
 	SPELLGROUP_VIRTUE = 11,
+	SPELLGROUP_STANCE = 12,
 };
 
 enum ChannelEvent_t : uint8_t {
@@ -1722,6 +1724,9 @@ struct LightInfo {
 		level(newLevel), color(newColor) { }
 };
 
+class Party;
+enum class HealingKind : uint8_t { Primary, SharedConservation, HealingLink };
+
 struct CombatDamage {
 	struct {
 		CombatType_t type = COMBAT_NONE;
@@ -1729,16 +1734,20 @@ struct CombatDamage {
 	} primary, secondary;
 
 	CombatOrigin origin = ORIGIN_NONE;
+	CombatType_t convertedElement = COMBAT_NONE;
 	bool critical = false;
 	int affected = 1;
 	bool extension = false;
+	bool suppressCharms = false;
+	bool attackReductionResolved = false;
+	uint8_t attackReductionPercent = 0;
 	std::string exString;
 	bool fatal = false;
 	bool hazardDodge = false;
 
 	int32_t criticalDamage = 0;
 	int32_t criticalChance = 0;
-	int32_t damageMultiplier = 0;
+	double damageMultiplier = 0;
 	int32_t damageReductionMultiplier = 0;
 	int32_t healingMultiplier = 0;
 	int32_t manaLeech = 0;
@@ -1746,6 +1755,9 @@ struct CombatDamage {
 	int32_t lifeLeech = 0;
 	int32_t lifeLeechChance = 0;
 	int32_t healingLink = 0;
+	HealingKind healingKind = HealingKind::Primary;
+	int32_t sharedHealingBase = 0;
+	std::weak_ptr<Party> sharedHealingParty;
 
 	std::string instantSpellName;
 	std::string runeSpellName;
@@ -1753,7 +1765,7 @@ struct CombatDamage {
 	CombatDamage() = default;
 
 	bool isEmpty() const {
-		return primary.type == COMBAT_NONE && primary.value == 0 && secondary.type == COMBAT_NONE && secondary.value == 0 && origin == ORIGIN_NONE && critical == false && affected == 1 && extension == false && exString.empty() && fatal == false && criticalDamage == 0 && criticalChance == 0 && damageMultiplier == 0 && damageReductionMultiplier == 0 && healingMultiplier == 0 && manaLeech == 0 && manaLeechChance == 0 && lifeLeech == 0 && lifeLeechChance == 0 && healingLink == 0 && instantSpellName.empty() && runeSpellName.empty();
+		return !attackReductionResolved && attackReductionPercent == 0 && healingKind == HealingKind::Primary && sharedHealingBase == 0 && !suppressCharms && convertedElement == COMBAT_NONE && primary.type == COMBAT_NONE && primary.value == 0 && secondary.type == COMBAT_NONE && secondary.value == 0 && origin == ORIGIN_NONE && critical == false && affected == 1 && extension == false && exString.empty() && fatal == false && criticalDamage == 0 && criticalChance == 0 && damageMultiplier == 0 && damageReductionMultiplier == 0 && healingMultiplier == 0 && manaLeech == 0 && manaLeechChance == 0 && lifeLeech == 0 && lifeLeechChance == 0 && healingLink == 0 && instantSpellName.empty() && runeSpellName.empty();
 	}
 };
 

@@ -4,6 +4,7 @@ target_sources(
             appearance/outfit/outfit.cpp
             appearance/attached_effects/attached_effects.cpp
             combat/combat.cpp
+            combat/attack_reduction.hpp
             combat/condition.cpp
             combat/spells.cpp
             creature.cpp
@@ -46,5 +47,12 @@ target_sources(
             players/components/player_vip.cpp
             players/components/wheel/wheel_gems.cpp
             players/components/weapon_proficiency.cpp
+            players/components/weapon_proficiency_shaping.cpp
+            players/components/elemental_stance.hpp
+            players/components/paladin_stance.hpp
+            players/components/druid_stance.hpp
+            players/components/knight_stance.hpp
+            players/components/druid_healing.hpp
+            players/components/mana_buffer.hpp
             players/vocations/vocation.cpp
 )

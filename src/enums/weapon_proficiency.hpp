@@ -9,9 +9,10 @@
 
 #pragma once
 
-#ifndef USE_PRECOMPILED_HEADERS
-	#include <cstdint>
-#endif
+#include <cstdint>
+#include <cmath>
+#include <string>
+#include <vector>
 
 #include "creatures/creatures_definitions.hpp"
 
@@ -48,6 +49,7 @@ enum class WeaponProficiencyBonus_t : uint8_t {
 	OMEGA_STRIKE_EXTRA_DAMAGE = 29, // extra damage against creatures below the low-health threshold
 	ARMOR_PENETRATION = 30, // physical armor penetration percentage
 	ELEMENTAL_PIERCE = 31, // elemental resistance penetration percentage
+	HOMING_MISSILE = 32, // 15.30+: chance per offensive cast, damage scaled by player level
 };
 
 enum class SkillPercentage_t : uint8_t {
@@ -97,6 +99,10 @@ struct ProficiencyPerk {
 	uint8_t index = 0;
 
 	double_t value = 0.0;
+	double_t probability = 0.0;
+	double_t multiplier = 0.0;
+	uint16_t missileId = 0;
+	bool highestCombatSkill = false;
 
 	uint16_t spellId = 0;
 	uint8_t range = 0;
@@ -122,10 +128,20 @@ struct Proficiency {
 	uint8_t maxLevel = 0;
 };
 
+struct ProficiencyShape {
+	uint8_t level = 0;
+	uint8_t index = 0;
+	uint8_t rank = 0;
+	uint16_t id = 0;
+	std::vector<uint16_t> offers;
+};
+
 struct WeaponProficiencyData {
 	uint32_t experience = 0;
 	std::vector<ProficiencyPerk> perks = {};
 	bool mastered = false;
+	uint32_t shapingRevision = 0;
+	std::vector<ProficiencyShape> shapes;
 };
 
 struct WeaponProficiencyBonusStat {

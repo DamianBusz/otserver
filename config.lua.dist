@@ -172,7 +172,7 @@ forgeMaxItemTier = 10
 forgeCostOneSliver = 20
 forgeSliverAmount = 3
 forgeCoreCost = 50
-forgeMaxDust = 225
+forgeMaxDust = 4600
 forgeFusionDustCost = 100
 forgeConvergenceFusionDustCost = 130
 forgeTransferDustCost = 100
@@ -476,7 +476,9 @@ toggleMountInProtectionZone = false
 freePremium = false
 kickIdlePlayerAfterMinutes = 15
 maxMessageBuffer = 4
-toggleLearnSpells = true
+-- Ordinary vocation spells are available without purchasing them from an NPC.
+-- Explicit Wheel/quest unlocks and level, mana, vocation and premium checks still apply.
+toggleLearnSpells = false
 emoteSpells = false
 allowWalkthrough = true
 coinPacketSize = 25

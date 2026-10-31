@@ -198,9 +198,9 @@ int CombatFunctions::luaCombatExecute(lua_State* L) {
 			}
 
 			if (combat->hasArea()) {
-				combat->doCombat(creature, target->getPosition());
+				result = combat->doCombat(creature, target->getPosition());
 			} else {
-				combat->doCombat(creature, target);
+				result = combat->doCombat(creature, target);
 			}
 			break;
 		}

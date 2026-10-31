@@ -1662,6 +1662,9 @@ SpellGroup_t stringToSpellGroup(const std::string &value) {
 	if (tmpStr == "virtue" || tmpStr == "11") {
 		return SPELLGROUP_VIRTUE;
 	}
+	if (tmpStr == "stance" || tmpStr == "12") {
+		return SPELLGROUP_STANCE;
+	}
 
 	return SPELLGROUP_NONE;
 }

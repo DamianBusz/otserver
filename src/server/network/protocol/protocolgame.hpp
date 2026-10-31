@@ -15,6 +15,10 @@
 #include "game/movement/position.hpp"
 #include "utils/utils_definitions.hpp"
 #include "creatures/players/stash_definitions.hpp"
+#include "server/network/protocol/party_tracking.hpp"
+
+#include <span>
+#include <string_view>
 
 #ifndef USE_PRECOMPILED_HEADERS
 	#include <optional>
@@ -74,6 +78,11 @@ struct ShopBlock;
 struct MarketOfferEx;
 struct HistoryMarketOffer;
 struct LightInfo;
+struct ProficiencyPerk;
+
+namespace ProtocolGamePackets {
+	void writeWeaponProficiencyWindow(NetworkMessage &msg, uint16_t weaponId, uint32_t experience, std::span<const ProficiencyPerk> selectedPerks, const ProtocolProfile* profile, std::string_view clientBuild);
+}
 
 using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
 using ItemVector = std::vector<std::shared_ptr<Item>>;
@@ -116,6 +125,7 @@ public:
 
 	void login(const std::string &name, uint32_t accnumber, OperatingSystem_t operatingSystem);
 	void logout(bool displayEffect, bool forced);
+	void refreshPartyTracking();
 
 	void AddItem(NetworkMessage &msg, const std::shared_ptr<Item> &item);
 	void AddItem(NetworkMessage &msg, uint16_t id, uint8_t count, uint8_t tier) const;
@@ -554,6 +564,8 @@ private:
 
 	// otclient
 	void parseExtendedOpcode(NetworkMessage &msg);
+	bool isPartyTrackingConnected() const;
+	PartyTracking partyTracking;
 
 	// OTCv8
 	void sendFeatures();
@@ -616,6 +628,7 @@ private:
 	friend class PlayerVIP;
 	friend class PlayerAttachedEffects;
 	friend class LivestreamManager;
+	friend class PartyTrackingProtocolTest;
 
 	std::unordered_set<uint32_t> knownCreatureSet;
 	std::shared_ptr<Player> player = nullptr;

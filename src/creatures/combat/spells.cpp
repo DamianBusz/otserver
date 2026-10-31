@@ -526,6 +526,8 @@ bool Spell::playerSpellCheck(const std::shared_ptr<Player> &player) const {
 	}
 
 	if (player->hasCondition(CONDITION_SPELLGROUPCOOLDOWN, group) || player->hasCondition(CONDITION_SPELLCOOLDOWN, m_spellId) || (secondaryGroup != SPELLGROUP_NONE && player->hasCondition(CONDITION_SPELLGROUPCOOLDOWN, secondaryGroup))) {
+		// Resynchronise active timers when a client attempts a cooling-down spell.
+		player->sendSpellCooldowns();
 		player->sendCancelMessage(RETURNVALUE_YOUAREEXHAUSTED);
 
 		if (isInstant()) {
@@ -732,8 +734,8 @@ bool Spell::getWheelOfDestinyUpgraded() const {
 	return whellOfDestinyUpgraded;
 }
 
-int32_t Spell::getWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade) const {
-	int32_t value = 0;
+double Spell::getWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade) const {
+	double value = 0;
 	try {
 		if (grade >= WheelSpellGrade_t::REGULAR) {
 			value += wheelOfDestinyRegularBoost.at(static_cast<uint8_t>(boost));
@@ -752,7 +754,7 @@ void Spell::setWheelOfDestinyUpgraded(bool value) {
 	whellOfDestinyUpgraded = value;
 }
 
-void Spell::setWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade, int32_t value) {
+void Spell::setWheelOfDestinyBoost(WheelSpellBoost_t boost, WheelSpellGrade_t grade, double value) {
 	try {
 		if (grade == WheelSpellGrade_t::REGULAR) {
 			wheelOfDestinyRegularBoost.at(static_cast<uint8_t>(boost)) = value;
@@ -861,6 +863,10 @@ void Spell::applyCooldownConditions(const std::shared_ptr<Player> &player) const
 
 	if (groupCooldown > 0) {
 		int32_t spellGroupCooldown = groupCooldown;
+		if (secondaryGroup == SPELLGROUP_FOCUS && player->getPlayerVocationEnum() == VOCATION_SORCERER_CIP
+		    && player->wheel().getInstant("Focus Mastery")) {
+			spellGroupCooldown = std::max(0, spellGroupCooldown - 2000);
+		}
 		if (isUpgraded) {
 			spellGroupCooldown -= getWheelOfDestinyBoost(WheelSpellBoost_t::GROUP_COOLDOWN, spellGrade);
 		}
@@ -929,6 +935,9 @@ void Spell::postCastSpell(const std::shared_ptr<Player> &player, bool finishedCa
 
 	if (payCost) {
 		postCastSpell(player, getManaCost(player), getSoulCost());
+	}
+	if (finishedCast && aggressive && group == SPELLGROUP_ATTACK) {
+		player->weaponProficiency().tryHomingMissile();
 	}
 }
 
@@ -1168,7 +1177,7 @@ void Spell::setLockedPZ(bool b) {
 
 InstantSpell::InstantSpell() = default;
 
-bool InstantSpell::playerCastInstant(const std::shared_ptr<Player> &player, std::string &param) const {
+bool InstantSpell::playerCastInstant(const std::shared_ptr<Player> &player, std::string &param, const Position* aim) const {
 	if (!playerSpellCheck(player)) {
 		return false;
 	}
@@ -1182,14 +1191,65 @@ bool InstantSpell::playerCastInstant(const std::shared_ptr<Player> &player, std:
 	std::shared_ptr<Player> playerTarget = nullptr;
 	std::shared_ptr<Creature> pzLockTarget = nullptr;
 
-	if (selfTarget) {
+	// Aim is a per-cast value, never retained on the player or shared spell.
+	if (aim && (aim->x == 0xFFFF || aim->z != player->getPosition().z
+	    || !g_game().canThrowObjectTo(player->getPosition(), *aim, SightLine_CheckSightLineAndFloor,
+	        range == -1 ? 7 : range, range == -1 ? 7 : range))) {
+		player->sendCancelMessage(RETURNVALUE_CREATUREISNOTREACHABLE);
+		return false;
+	}
+
+	if (getSpellId() == 317 || getSpellId() == 318) {
+		std::shared_ptr<Creature> selected;
+		if (aim) {
+			const auto tile = g_game().map.getTile(*aim);
+			selected = tile ? tile->getBottomVisibleCreature(player) : nullptr;
+		} else {
+			selected = player->getAttackedCreature();
+		}
+		const auto target = Combat::selectForkedTarget(player, selected, !aim && !selected);
+		if (!target) {
+			player->sendCancelMessage(RETURNVALUE_YOUCANONLYUSEITONCREATURES);
+			return false;
+		}
+		var.type = VARIANT_NUMBER;
+		var.number = target->getID();
+		pzLockTarget = target;
+	} else if (getSpellId() == 310 || getSpellId() == 302 || getSpellId() == 303 || getSpellId() == 258) {
+		// Ground-targeted spells retain an explicit cursor position, or use the
+		// current target's position (self when no living target is selected).
+		var.type = VARIANT_POSITION;
+		var.pos = aim ? *aim : player->getPosition();
+		if (!aim) {
+			const auto target = player->getAttackedCreature();
+			if (target && !target->isRemoved() && target->getHealth() > 0) {
+				if (!canThrowSpell(player, target)) {
+					player->sendCancelMessage(RETURNVALUE_CREATUREISNOTREACHABLE);
+					return false;
+				}
+				var.pos = target->getPosition();
+				pzLockTarget = target;
+			}
+		}
+		if (!playerInstantSpellCheck(player, var.pos)) {
+			return false;
+		}
+	} else if (selfTarget) {
 		var.type = VARIANT_NUMBER;
 		var.number = player->getID();
 	} else if (needTarget || casterTargetOrDirection) {
 		std::shared_ptr<Creature> target;
 		bool useDirection = false;
 
-		if (hasParam) {
+		if (aim) {
+			const auto tile = g_game().map.getTile(*aim);
+			target = tile ? tile->getBottomVisibleCreature(player) : nullptr;
+			if (!target || target->isRemoved() || target->getHealth() <= 0) {
+				player->sendCancelMessage(RETURNVALUE_YOUCANONLYUSEITONCREATURES);
+				return false;
+			}
+			playerTarget = target->getPlayer();
+		} else if (hasParam) {
 			ReturnValue ret = g_game().getPlayerByNameWildcard(param, playerTarget);
 
 			if (playerTarget && playerTarget->isAccessPlayer() && !player->isAccessPlayer()) {
@@ -1269,7 +1329,13 @@ bool InstantSpell::playerCastInstant(const std::shared_ptr<Player> &player, std:
 		var.pos = variantPosition;
 
 		if (needDirection) {
-			applyInstantSpellDirection(player, var, variantPosition, getSpellId());
+			if (aim) {
+				// Aim the spell independently of the player's facing and attack target.
+				// The dominant axis selects one of four cardinal directions.
+				var.pos = Spells::getCasterPosition(player, getPrimaryDirection(variantPosition, *aim));
+			} else {
+				applyInstantSpellDirection(player, var, variantPosition, getSpellId());
+			}
 		}
 
 		if (!playerInstantSpellCheck(player, var.pos)) {
@@ -1369,6 +1435,12 @@ bool InstantSpell::executeCastSpell(const std::shared_ptr<Creature> &creature, c
 
 	LuaScriptInterface::pushVariant(L, var);
 
+	if (const auto &player = creature->getPlayer(); player && player->getPlayerVocationEnum() == VOCATION_SORCERER_CIP) {
+		ElementalStanceState::CastScope cast(player->elementalStance(), getName());
+		const bool success = getScriptInterface()->callFunction(2);
+		cast.finish(success);
+		return success;
+	}
 	return getScriptInterface()->callFunction(2);
 }
 

@@ -112,6 +112,7 @@ class PlayerFunctions {
 	static int luaPlayerGetBaseMaxMana(lua_State* L);
 
 	static int luaPlayerGetSkillLevel(lua_State* L);
+	static int luaPlayerGetShieldSpellDefense(lua_State* L);
 	static int luaPlayerGetEffectiveSkillLevel(lua_State* L);
 	static int luaPlayerGetSkillPercent(lua_State* L);
 	static int luaPlayerGetSkillTries(lua_State* L);
@@ -417,6 +418,15 @@ class PlayerFunctions {
 
 	static int luaPlayerSetSerene(lua_State* L);
 	static int luaPlayerSetVirtue(lua_State* L);
+	static int luaPlayerCastAimedSpell(lua_State* L);
+	static int luaPlayerSetElementalStance(lua_State* L);
+	static int luaPlayerGetElementalStance(lua_State* L);
+	static int luaPlayerSetPaladinStance(lua_State* L);
+	static int luaPlayerGetPaladinStance(lua_State* L);
+	static int luaPlayerSetDruidStance(lua_State* L);
+	static int luaPlayerGetDruidStance(lua_State* L);
+	static int luaPlayerSetKnightStance(lua_State* L);
+	static int luaPlayerGetKnightStance(lua_State* L);
 	static int luaPlayerGetVirtue(lua_State* L);
 	static int luaPlayerFillHarmony(lua_State* L);
 	static int luaPlayerGetHarmony(lua_State* L);

@@ -163,7 +163,7 @@ enum class WheelGemSupremeModifier_t : uint8_t {
 	Sorcerer_GreatEnergyBeam_CriticalExtraDamage,
 	Sorcerer_RevelationMastery_AvatarOfStorm,
 	Sorcerer_RevelationMastery_BeamMastery,
-	Sorcerer_RevelationMastery_DrainBody,
+	Sorcerer_RevelationMastery_LordOfDestruction,
 
 	Druid_AvatarOfNature_Cooldown,
 	Druid_NaturesEmbrace_Cooldown,

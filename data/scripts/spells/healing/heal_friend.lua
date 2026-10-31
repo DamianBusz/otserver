@@ -5,9 +5,8 @@ combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)
 combat:setParameter(COMBAT_PARAM_AGGRESSIVE, false)
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level * 0.2 + magicLevel * 10) + 3
-	local max = (level * 0.2 + magicLevel * 14) + 5
-	return min, max
+	-- Empirical bounds, explicitly documented in druid-rebalance.md.
+	return DruidSpellFormula.bounds(level, magicLevel, 25, 250, 270)
 end
 
 combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")

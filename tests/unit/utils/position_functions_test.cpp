@@ -10,6 +10,19 @@
 #include "game/movement/position.hpp"
 #include "utils/tools.hpp"
 
+TEST(PrimaryDirection, CursorAimUsesOnlyTheDominantCardinalAxis) {
+	const Position origin { 100, 100, 7 };
+	for (int dx = -7; dx <= 7; ++dx) {
+		for (int dy = -7; dy <= 7; ++dy) {
+			const Position cursor { static_cast<uint16_t>(100 + dx), static_cast<uint16_t>(100 + dy), 7 };
+			const auto expected = std::abs(dx) > std::abs(dy)
+				? (dx > 0 ? DIRECTION_EAST : DIRECTION_WEST)
+				: (dy > 0 ? DIRECTION_SOUTH : DIRECTION_NORTH);
+			EXPECT_EQ(getPrimaryDirection(origin, cursor), expected);
+		}
+	}
+}
+
 struct GetDirectionToTestCase {
 	Position from;
 	Position to;

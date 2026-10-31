@@ -9,6 +9,7 @@
 
 // Player.hpp already includes the wheel
 #include "creatures/players/player.hpp"
+#include "creatures/players/components/druid_healing.hpp"
 
 #include "map/spectators.hpp"
 #include "creatures/monsters/monster.hpp"
@@ -217,7 +218,7 @@ const static std::vector<WheelGemSupremeModifier_t> modsSupremeSorcererPosition 
 	WheelGemSupremeModifier_t::Sorcerer_GreatEnergyBeam_CriticalExtraDamage,
 	WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_AvatarOfStorm,
 	WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_BeamMastery,
-	WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_DrainBody,
+	WheelGemSupremeModifier_t::Sorcerer_RevelationMastery_LordOfDestruction,
 };
 
 const static std::vector<WheelGemSupremeModifier_t> modsSupremeDruidPosition = {
@@ -306,7 +307,7 @@ namespace {
 		for (const auto &spellTable : spellsTable) {
 			auto size = std::ssize(spellTable.grade);
 			g_logger().debug("spell area stage {}, grade {}", stage, size);
-			if (spellTable.name != spellName || stage >= static_cast<uint8_t>(size)) {
+			if (!WheelSpells::matchesSpell(spellTable.name, spellName) || stage >= static_cast<uint8_t>(size)) {
 				continue;
 			}
 
@@ -327,7 +328,7 @@ namespace {
 		for (const auto &spellTable : spellsTable) {
 			auto size = std::ssize(spellTable.grade);
 			g_logger().debug("spell target stage {}, grade {}", stage, size);
-			if (spellTable.name != spellName || stage >= static_cast<uint8_t>(size)) {
+			if (!WheelSpells::matchesSpell(spellTable.name, spellName) || stage >= static_cast<uint8_t>(size)) {
 				continue;
 			}
 
@@ -347,7 +348,7 @@ namespace {
 		for (const auto &spellTable : spellsTable) {
 			auto size = std::ssize(spellTable.grade);
 			g_logger().debug("spell duration stage {}, grade {}", stage, size);
-			if (spellTable.name != spellName || stage >= static_cast<uint8_t>(size)) {
+			if (!WheelSpells::matchesSpell(spellTable.name, spellName) || stage >= static_cast<uint8_t>(size)) {
 				continue;
 			}
 
@@ -1359,7 +1360,7 @@ void PlayerWheel::addSpellBonus(const std::string &spellName, const WheelSpells:
 	m_spellsBonuses[spellName] = bonus;
 }
 
-int32_t PlayerWheel::getSpellBonus(const std::string &spellName, WheelSpellBoost_t boost) const {
+double PlayerWheel::getSpellBonus(const std::string &spellName, WheelSpellBoost_t boost) const {
 	using enum WheelSpellBoost_t;
 
 	if (!m_spellsBonuses.contains(spellName)) {
@@ -2240,7 +2241,7 @@ void PlayerWheel::registerPlayerBonusData() {
 		}
 		if (m_playerBonusData.stages.divineGrenade >= 2) {
 			WheelSpells::Bonus bonus;
-			bonus.decrease.cooldown = 4 * 1000;
+			bonus.decrease.cooldown = 6 * 1000;
 			addSpellBonus("Divine Grenade", bonus);
 		}
 		if (m_playerBonusData.stages.divineGrenade >= 3) {
@@ -2252,12 +2253,12 @@ void PlayerWheel::registerPlayerBonusData() {
 		setSpellInstant("Divine Grenade", false);
 	}
 
-	if (m_playerBonusData.stages.drainBody > 0) {
-		for (int i = 0; i < m_playerBonusData.stages.drainBody; ++i) {
-			setSpellInstant("Drain Body", true);
+	if (m_playerBonusData.stages.lordOfDestruction > 0) {
+		for (int i = 0; i < m_playerBonusData.stages.lordOfDestruction; ++i) {
+			setSpellInstant("Lord of Destruction", true);
 		}
 	} else {
-		setSpellInstant("Drain Body", false);
+		setSpellInstant("Lord of Destruction", false);
 	}
 	if (m_playerBonusData.stages.beamMastery > 0) {
 		m_beamMasterySpells.emplace("Energy Beam");
@@ -2265,15 +2266,6 @@ void PlayerWheel::registerPlayerBonusData() {
 		m_beamMasterySpells.emplace("Great Energy Beam");
 		for (int i = 0; i < m_playerBonusData.stages.beamMastery; ++i) {
 			setSpellInstant("Beam Mastery", true);
-		}
-		WheelSpells::Bonus deathBeamBonus;
-		deathBeamBonus.decrease.cooldown = 2 * 1000;
-		deathBeamBonus.increase.damage = 6;
-		if (m_playerBonusData.stages.beamMastery >= 2) {
-			addSpellBonus("Great Death Beam", deathBeamBonus);
-		}
-		if (m_playerBonusData.stages.beamMastery >= 3) {
-			addSpellBonus("Great Death Beam", deathBeamBonus);
 		}
 	} else {
 		setSpellInstant("Beam Mastery", false);
@@ -2560,8 +2552,8 @@ void PlayerWheel::printPlayerWheelMethodsBonusData(const PlayerWheelMethodsBonus
 	if (bonusData.stages.blessingOfTheGrove > 0) {
 		g_logger().debug("  blessingOfTheGrove: {}", bonusData.stages.blessingOfTheGrove);
 	}
-	if (bonusData.stages.drainBody > 0) {
-		g_logger().debug("  drainBody: {}", bonusData.stages.drainBody);
+	if (bonusData.stages.lordOfDestruction > 0) {
+		g_logger().debug("  lordOfDestruction: {}", bonusData.stages.lordOfDestruction);
 	}
 	if (bonusData.stages.beamMastery > 0) {
 		g_logger().debug("  beamMastery: {}", bonusData.stages.beamMastery);
@@ -2809,10 +2801,7 @@ void PlayerWheel::applyBlueStageBonus(uint8_t stageValue, Vocation_t vocationEnu
 	if (vocationEnum == Vocation_t::VOCATION_KNIGHT_CIP) {
 		m_playerBonusData.stages.combatMastery = stageValue;
 	} else if (vocationEnum == Vocation_t::VOCATION_SORCERER_CIP) {
-		m_playerBonusData.stages.drainBody = stageValue;
-		for (uint8_t i = 0; i <= stageValue; ++i) {
-			addSpellToVector("Drain_Body_Spells");
-		}
+		m_playerBonusData.stages.lordOfDestruction = stageValue;
 	} else if (vocationEnum == Vocation_t::VOCATION_PALADIN_CIP) {
 		m_playerBonusData.stages.divineEmpowerment = stageValue;
 		for (uint8_t i = 0; i <= stageValue; ++i) {
@@ -3045,52 +3034,6 @@ bool PlayerWheel::checkBallisticMastery() {
 	return updateClient;
 }
 
-bool PlayerWheel::checkCombatMastery() {
-	setOnThinkTimer(WheelOnThink_t::COMBAT_MASTERY, OTSYS_TIME() + 2000);
-	bool updateClient = false;
-	const uint8_t stage = getStage(WheelStage_t::COMBAT_MASTERY);
-
-	const auto &item = m_player.getWeapon();
-	if (item && item->getSlotPosition() & SLOTP_TWO_HAND) {
-		int32_t criticalSkill = 0;
-		if (stage >= 3) {
-			criticalSkill = 1200;
-		} else if (stage >= 2) {
-			criticalSkill = 800;
-		} else if (stage >= 1) {
-			criticalSkill = 400;
-		}
-
-		if (getMajorStat(WheelMajor_t::CRITICAL_DMG_2) != criticalSkill) {
-			setMajorStat(WheelMajor_t::CRITICAL_DMG_2, criticalSkill);
-			updateClient = true;
-		}
-		if (getMajorStat(WheelMajor_t::DEFENSE) != 0) {
-			setMajorStat(WheelMajor_t::DEFENSE, 0);
-			updateClient = true;
-		}
-	} else {
-		if (getMajorStat(WheelMajor_t::CRITICAL_DMG_2) != 0) {
-			setMajorStat(WheelMajor_t::CRITICAL_DMG_2, 0);
-			updateClient = true;
-		}
-		if (getMajorStat(WheelMajor_t::DEFENSE) == 0) {
-			int32_t shieldSkill = 0;
-			if (stage >= 3) {
-				shieldSkill = 30;
-			} else if (stage >= 2) {
-				shieldSkill = 20;
-			} else if (stage >= 1) {
-				shieldSkill = 10;
-			}
-			setMajorStat(WheelMajor_t::DEFENSE, shieldSkill);
-			updateClient = true;
-		}
-	}
-
-	return updateClient;
-}
-
 bool PlayerWheel::checkDivineEmpowerment() {
 	bool updateClient = false;
 	setOnThinkTimer(WheelOnThink_t::DIVINE_EMPOWERMENT, OTSYS_TIME() + 1000);
@@ -3155,11 +3098,14 @@ int32_t PlayerWheel::checkDivineGrenade(const std::shared_ptr<Creature> &target)
 void PlayerWheel::checkGiftOfLife() {
 	// Healing
 	CombatDamage giftDamage;
-	giftDamage.primary.value = (m_player.getMaxHealth() * getGiftOfLifeValue()) / 100;
+	giftDamage.primary.value = DruidHealing::fraction(m_player.getMaxHealth(), int64_t(getGiftOfLifeValue()) * 100);
 	giftDamage.primary.type = COMBAT_HEALING;
 	m_player.sendTextMessage(MESSAGE_EVENT_ADVANCE, "That was close! Fortunately, your were saved by the Gift of Life.");
 	g_game().addMagicEffect(m_player.getPosition(), CONST_ME_WATER_DROP);
 	g_game().combatChangeHealth(m_player.getPlayer(), m_player.getPlayer(), giftDamage);
+	const auto manaRecovery = std::min<uint64_t>(
+		uint64_t(m_player.getMaxMana()) * getGiftOfLifeValue() / 100, std::numeric_limits<int32_t>::max());
+	m_player.changeMana(static_cast<int32_t>(manaRecovery));
 	// Condition cooldown reduction
 	constexpr uint16_t reductionTimer = 60000;
 	reduceAllSpellsCooldownTimer(reductionTimer);
@@ -3169,33 +3115,8 @@ void PlayerWheel::checkGiftOfLife() {
 	sendGiftOfLifeCooldown();
 }
 
-int32_t PlayerWheel::checkBlessingGroveHealingByTarget(const std::shared_ptr<Creature> &target) const {
-	if (!target || target == m_player.getPlayer()) {
-		return 0;
-	}
-
-	int32_t healingBonus = 0;
-	const uint8_t stage = getStage(WheelStage_t::BLESSING_OF_THE_GROVE);
-	const int32_t healthPercent = std::round((static_cast<double>(target->getHealth()) * 100) / static_cast<double>(target->getMaxHealth()));
-	if (healthPercent <= 30) {
-		if (stage >= 3) {
-			healingBonus = 24;
-		} else if (stage >= 2) {
-			healingBonus = 18;
-		} else if (stage >= 1) {
-			healingBonus = 12;
-		}
-	} else if (healthPercent <= 60) {
-		if (stage >= 3) {
-			healingBonus = 12;
-		} else if (stage >= 2) {
-			healingBonus = 9;
-		} else if (stage >= 1) {
-			healingBonus = 6;
-		}
-	}
-
-	return healingBonus;
+double PlayerWheel::checkBlessingGroveHealingByTarget(const std::shared_ptr<Creature> &target) const {
+	return target ? DruidHealing::groveBasisPoints(getStage(WheelStage_t::BLESSING_OF_THE_GROVE), target->getHealth(), target->getMaxHealth()) / 100.0 : 0.0;
 }
 
 int32_t PlayerWheel::checkTwinBurstByTarget(const std::shared_ptr<Creature> &target) const {
@@ -3285,17 +3206,6 @@ int32_t PlayerWheel::checkDrainBodyLeech(const std::shared_ptr<Creature> &target
 	}
 
 	return 0;
-}
-
-int32_t PlayerWheel::checkBattleHealingAmount() const {
-	double amount = static_cast<double>(m_player.getSkillLevel(SKILL_SHIELD)) * 0.2;
-	const uint8_t healthPercent = (m_player.getHealth() * 100) / m_player.getMaxHealth();
-	if (healthPercent <= 30) {
-		amount *= 3;
-	} else if (healthPercent <= 60) {
-		amount *= 2;
-	}
-	return static_cast<int32_t>(amount);
 }
 
 int32_t PlayerWheel::checkAvatarSkill(WheelAvatarSkill_t skill) const {
@@ -3406,10 +3316,6 @@ void PlayerWheel::onThink(bool force /* = false*/) {
 	if (getInstant("Ballistic Mastery") && (force || getOnThinkTimer(WheelOnThink_t::BALLISTIC_MASTERY) < OTSYS_TIME()) && checkBallisticMastery()) {
 		updateClient = true;
 	}
-	// Combat Mastery
-	if (getInstant("Combat Mastery") && (force || getOnThinkTimer(WheelOnThink_t::COMBAT_MASTERY) < OTSYS_TIME()) && checkCombatMastery()) {
-		updateClient = true;
-	}
 	// Divine Empowerment
 	if (getInstant("Divine Empowerment") && (force || getOnThinkTimer(WheelOnThink_t::DIVINE_EMPOWERMENT) < OTSYS_TIME()) && checkDivineEmpowerment()) {
 		updateClient = true;
@@ -3510,7 +3416,7 @@ std::shared_ptr<Spell> PlayerWheel::getCombatDataSpell(CombatDamage &damage) {
 
 		damage.damageMultiplier += checkFocusMasteryDamage();
 		if (getHealingLinkUpgrade(spellName)) {
-			damage.healingLink += 10;
+			damage.healingLink += 25;
 		}
 		if (spell->getSecondaryGroup() == SPELLGROUP_FOCUS && getInstant("Focus Mastery")) {
 			setOnThinkTimer(WheelOnThink_t::FOCUS_MASTERY, (OTSYS_TIME() + 12000));
@@ -3518,7 +3424,7 @@ std::shared_ptr<Spell> PlayerWheel::getCombatDataSpell(CombatDamage &damage) {
 
 		if (spell->getWheelOfDestinyUpgraded()) {
 			damage.criticalDamage += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::CRITICAL_DAMAGE, spellGrade) * 100;
-			damage.criticalChance += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::CRITICAL_CHANCE, spellGrade);
+			damage.criticalChance += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::CRITICAL_CHANCE, spellGrade) * 100;
 			damage.damageMultiplier += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::DAMAGE, spellGrade);
 			damage.damageReductionMultiplier += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::DAMAGE_REDUCTION, spellGrade);
 			damage.healingMultiplier += spell->getWheelOfDestinyBoost(WheelSpellBoost_t::HEAL, spellGrade);
@@ -3529,7 +3435,7 @@ std::shared_ptr<Spell> PlayerWheel::getCombatDataSpell(CombatDamage &damage) {
 		}
 
 		damage.criticalDamage += (getSpellBonus(spellName, WheelSpellBoost_t::CRITICAL_DAMAGE) * 100);
-		damage.criticalChance += getSpellBonus(spellName, WheelSpellBoost_t::CRITICAL_CHANCE);
+		damage.criticalChance += getSpellBonus(spellName, WheelSpellBoost_t::CRITICAL_CHANCE) * 100;
 		damage.damageMultiplier += getSpellBonus(spellName, WheelSpellBoost_t::DAMAGE);
 		damage.damageReductionMultiplier += getSpellBonus(spellName, WheelSpellBoost_t::DAMAGE_REDUCTION);
 		damage.healingMultiplier += getSpellBonus(spellName, WheelSpellBoost_t::HEAL);
@@ -3678,11 +3584,11 @@ void PlayerWheel::setSpellInstant(const std::string &name, bool value) {
 		} else {
 			setStage(WheelStage_t::BLESSING_OF_THE_GROVE, 0);
 		}
-	} else if (name == "Drain Body") {
+	} else if (name == "Lord of Destruction") {
 		if (value) {
-			setStage(WheelStage_t::DRAIN_BODY, getStage(WheelStage_t::DRAIN_BODY) + 1);
+			setStage(WheelStage_t::LORD_OF_DESTRUCTION, getStage(WheelStage_t::LORD_OF_DESTRUCTION) + 1);
 		} else {
-			setStage(WheelStage_t::DRAIN_BODY, 0);
+			setStage(WheelStage_t::LORD_OF_DESTRUCTION, 0);
 		}
 	} else if (name == "Divine Empowerment") {
 		if (value) {
@@ -3786,7 +3692,7 @@ uint8_t PlayerWheel::getStage(std::string_view name) const {
 		{ "Combat Mastery", COMBAT_MASTERY },
 		{ "Gift of Life", GIFT_OF_LIFE },
 		{ "Blessing of the Grove", BLESSING_OF_THE_GROVE },
-		{ "Drain Body", DRAIN_BODY },
+		{ "Lord of Destruction", LORD_OF_DESTRUCTION },
 		{ "Divine Empowerment", DIVINE_EMPOWERMENT },
 		{ "Divine Grenade", DIVINE_GRENADE },
 		{ "Twin Burst", TWIN_BURST },
@@ -3919,7 +3825,7 @@ bool PlayerWheel::getInstant(std::string_view name) const {
 		{ "Combat Mastery", COMBAT_MASTERY },
 		{ "Gift of Life", GIFT_OF_LIFE },
 		{ "Blessing of the Grove", BLESSING_OF_THE_GROVE },
-		{ "Drain Body", DRAIN_BODY },
+		{ "Lord of Destruction", LORD_OF_DESTRUCTION },
 		{ "Divine Empowerment", DIVINE_EMPOWERMENT },
 		{ "Divine Grenade", DIVINE_GRENADE },
 		{ "Twin Burst", TWIN_BURST },
@@ -4042,22 +3948,20 @@ uint8_t PlayerWheel::getBeamAffectedTotal(const CombatDamage &tmpDamage) const {
 	return beamAffectedTotal;
 }
 
-void PlayerWheel::updateBeamMasteryDamage(CombatDamage &tmpDamage, uint8_t &beamAffectedTotal, uint8_t &beamAffectedCurrent) const {
-	if (beamAffectedTotal > 0) {
-		tmpDamage.damageMultiplier += checkBeamMasteryDamage();
-		reduceAllSpellsCooldownTimer(1000); // Reduces all spell cooldown by 1 second per target hit (max 3 seconds)
-		--beamAffectedTotal;
-		beamAffectedCurrent++;
-	}
+
+int PlayerWheel::getBattleHealingPercent() const {
+	if (m_player.getPlayerVocationEnum() != VOCATION_KNIGHT_CIP || !getInstant("Battle Healing")) return 0;
+	return m_player.getShieldSpellDefense().has_value() ? 20 : 10;
 }
 
-void PlayerWheel::healIfBattleHealingActive() const {
-	if (getInstant("Battle Healing")) {
-		CombatDamage damage;
-		damage.primary.value = checkBattleHealingAmount();
-		damage.primary.type = COMBAT_HEALING;
-		g_game().combatChangeHealth(m_player.getPlayer(), m_player.getPlayer(), damage);
-	}
+double PlayerWheel::getCombatMasteryPercent(const Creature &healthOwner, bool incoming) const {
+	if (m_player.getPlayerVocationEnum() != VOCATION_KNIGHT_CIP) return 0;
+	const auto stage = getStage(WheelStage_t::COMBAT_MASTERY);
+	if (stage == 0 || healthOwner.getMaxHealth() <= 0) return 0;
+	const auto weapon = m_player.getWeapon();
+	const bool doubled = incoming ? m_player.getShieldSpellDefense().has_value()
+		: weapon && (weapon->getSlotPosition() & SLOTP_TWO_HAND);
+	return KnightWheel::masteryPercent(stage, healthOwner.getHealth(), healthOwner.getMaxHealth(), doubled);
 }
 
 void PlayerWheel::adjustDamageBasedOnResistanceAndSkill(int32_t &damage, CombatType_t combatType) const {
@@ -4072,25 +3976,8 @@ void PlayerWheel::adjustDamageBasedOnResistanceAndSkill(int32_t &damage, CombatT
 float PlayerWheel::calculateMitigation() const {
 	const int32_t skill = m_player.getSkillLevel(SKILL_SHIELD);
 	int32_t defenseValue = 0;
-	float fightFactor = 1.0f;
 	float shieldFactor = 1.0f;
 	float distanceFactor = 1.0f;
-	switch (m_player.fightMode) {
-		case FIGHTMODE_ATTACK: {
-			fightFactor = 0.8f;
-			break;
-		}
-		case FIGHTMODE_BALANCED: {
-			fightFactor = 1.0f;
-			break;
-		}
-		case FIGHTMODE_DEFENSE: {
-			fightFactor = 1.2f;
-			break;
-		}
-		default:
-			break;
-	}
 
 	const auto &shield = m_player.inventory[CONST_SLOT_RIGHT];
 	if (shield) {
@@ -4100,10 +3987,6 @@ float PlayerWheel::calculateMitigation() const {
 			shieldFactor = m_player.vocation->mitigationPrimaryShield;
 		}
 		defenseValue = shield->getDefense();
-		// Wheel of destiny
-		if (shield->getDefense() > 0) {
-			defenseValue += getMajorStatConditional("Combat Mastery", WheelMajor_t::DEFENSE);
-		}
 	}
 
 	const auto &weapon = m_player.inventory[CONST_SLOT_LEFT];
@@ -4119,7 +4002,7 @@ float PlayerWheel::calculateMitigation() const {
 		}
 	}
 
-	float mitigation = std::ceil(((((skill * m_player.vocation->mitigationFactor) + (shieldFactor * static_cast<float>(defenseValue))) / 100.0f) * fightFactor * distanceFactor) * 100.0f) / 100.0f;
+	float mitigation = std::ceil(((((skill * m_player.vocation->mitigationFactor) + (shieldFactor * static_cast<float>(defenseValue))) / 100.0f) * distanceFactor) * 100.0f) / 100.0f;
 	mitigation += (mitigation * static_cast<float>(getMitigationMultiplier())) / 100.f;
 	return mitigation;
 }

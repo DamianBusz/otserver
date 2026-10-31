@@ -2137,6 +2137,15 @@ std::shared_ptr<Condition> ConditionDamage::clone() const {
 	return std::make_shared<ConditionDamage>(*this);
 }
 
+std::shared_ptr<ConditionDamage> ConditionDamage::cloneWithElement(ConditionType_t type) const {
+	auto copy = std::make_shared<ConditionDamage>(*this);
+	if ((conditionType == CONDITION_FIRE || conditionType == CONDITION_ENERGY || conditionType == CONDITION_CURSED)
+	    && (type == CONDITION_FIRE || type == CONDITION_ENERGY || type == CONDITION_CURSED)) {
+		copy->conditionType = type;
+	}
+	return copy;
+}
+
 ConditionDamage::ConditionDamage(ConditionId_t intiId, ConditionType_t initType, bool initBuff, uint32_t initSubId) :
 	Condition(intiId, initType, 0, initBuff, initSubId) { }
 

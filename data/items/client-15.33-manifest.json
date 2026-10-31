@@ -1,0 +1,814 @@
+{
+  "client_version": "15.33.8791c6",
+  "assets": {
+    "data/items/appearances.dat": {
+      "source": "appearances-fedd91264b6f107851d1ca1086978de66212a98115bfca37c38774adb5f01d69.dat",
+      "sha256": "fedd91264b6f107851d1ca1086978de66212a98115bfca37c38774adb5f01d69",
+      "bytes": 5018938
+    },
+    "data/items/proficiencies.json": {
+      "source": "proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",
+      "sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015",
+      "bytes": 510693
+    }
+  },
+  "moonsilver": [
+    {
+      "id": 53207,
+      "name": "moonsilver epee",
+      "proficiency": 478
+    },
+    {
+      "id": 53208,
+      "name": "stellar moonsilver epee",
+      "proficiency": 489
+    },
+    {
+      "id": 53209,
+      "name": "moonsilver claymore",
+      "proficiency": 485
+    },
+    {
+      "id": 53210,
+      "name": "stellar moonsilver claymore",
+      "proficiency": 496
+    },
+    {
+      "id": 53211,
+      "name": "moonsilver axe",
+      "proficiency": 475
+    },
+    {
+      "id": 53212,
+      "name": "stellar moonsilver axe",
+      "proficiency": 486
+    },
+    {
+      "id": 53213,
+      "name": "moonsilver chopper",
+      "proficiency": 480
+    },
+    {
+      "id": 53214,
+      "name": "stellar moonsilver chopper",
+      "proficiency": 491
+    },
+    {
+      "id": 53215,
+      "name": "moonsilver crusher",
+      "proficiency": 476
+    },
+    {
+      "id": 53216,
+      "name": "stellar moonsilver crusher",
+      "proficiency": 487
+    },
+    {
+      "id": 53217,
+      "name": "moonsilver mace",
+      "proficiency": 482
+    },
+    {
+      "id": 53218,
+      "name": "stellar moonsilver mace",
+      "proficiency": 493
+    },
+    {
+      "id": 53219,
+      "name": "moonsilver channeler",
+      "proficiency": 479
+    },
+    {
+      "id": 53220,
+      "name": "stellar moonsilver channeler",
+      "proficiency": 490
+    },
+    {
+      "id": 53221,
+      "name": "moonsilver sceptre",
+      "proficiency": 477
+    },
+    {
+      "id": 53222,
+      "name": "stellar moonsilver sceptre",
+      "proficiency": 488
+    },
+    {
+      "id": 53223,
+      "name": "moonsilver katar",
+      "proficiency": 484
+    },
+    {
+      "id": 53224,
+      "name": "stellar moonsilver katar",
+      "proficiency": 495
+    },
+    {
+      "id": 53225,
+      "name": "moonsilver bow",
+      "proficiency": 481
+    },
+    {
+      "id": 53226,
+      "name": "stellar moonsilver bow",
+      "proficiency": 492
+    },
+    {
+      "id": 53227,
+      "name": "moonsilver crossbow",
+      "proficiency": 483
+    },
+    {
+      "id": 53228,
+      "name": "stellar moonsilver crossbow",
+      "proficiency": 494
+    },
+    {
+      "id": 53229,
+      "name": "moonsilver battle visor",
+      "proficiency": 0
+    },
+    {
+      "id": 53230,
+      "name": "moonsilver trail hood",
+      "proficiency": 0
+    },
+    {
+      "id": 53231,
+      "name": "moonsilver nimbus hat",
+      "proficiency": 0
+    },
+    {
+      "id": 53232,
+      "name": "moonsilver spirit mask",
+      "proficiency": 0
+    },
+    {
+      "id": 53233,
+      "name": "moonsilver strike helm",
+      "proficiency": 0
+    }
+  ],
+  "creatures": [
+    {
+      "id": 2802,
+      "name": "winged jaracal",
+      "looktype": 1961,
+      "colors": {
+        "1": [
+          113
+        ],
+        "2": [
+          40
+        ],
+        "3": [
+          95
+        ],
+        "4": [
+          95
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 1
+    },
+    {
+      "id": 2803,
+      "name": "iceplume strider",
+      "looktype": 1950,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          51
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2804,
+      "name": "silverfrost sentinel",
+      "looktype": 1951,
+      "colors": {
+        "1": [
+          81
+        ],
+        "2": [
+          113
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2805,
+      "name": "true feverbloom asura",
+      "looktype": 1068,
+      "colors": {
+        "1": [
+          62
+        ],
+        "2": [
+          61
+        ],
+        "3": [
+          114
+        ],
+        "4": [
+          15
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 1
+    },
+    {
+      "id": 2839,
+      "name": "radiant warden",
+      "looktype": 1964,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 0
+    },
+    {
+      "id": 2840,
+      "name": "devoted radiant warden",
+      "looktype": 1964,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 1
+    },
+    {
+      "id": 2841,
+      "name": "radiant paragon",
+      "looktype": 1966,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 2
+    },
+    {
+      "id": 2842,
+      "name": "devoted radiant paragon",
+      "looktype": 1966,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 1
+    },
+    {
+      "id": 2843,
+      "name": "radiant acolyte",
+      "looktype": 1969,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 0
+    },
+    {
+      "id": 2844,
+      "name": "devoted radiant acolyte",
+      "looktype": 1969,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 3
+    },
+    {
+      "id": 2845,
+      "name": "radiant templar",
+      "looktype": 1965,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 0
+    },
+    {
+      "id": 2846,
+      "name": "devoted radiant templar",
+      "looktype": 1965,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 3
+    },
+    {
+      "id": 2847,
+      "name": "radiant inquisitor",
+      "looktype": 1967,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 0
+    },
+    {
+      "id": 2848,
+      "name": "devoted radiant inquisitor",
+      "looktype": 1967,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 3
+    },
+    {
+      "id": 2849,
+      "name": "radiant zealot",
+      "looktype": 1968,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 0
+    },
+    {
+      "id": 2850,
+      "name": "devoted radiant zealot",
+      "looktype": 1968,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 5,
+      "lookAddons": 3
+    },
+    {
+      "id": 2851,
+      "name": "moonspawn blightspitter",
+      "looktype": 1970,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2852,
+      "name": "moonspawn oozecrown",
+      "looktype": 1971,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2856,
+      "name": "jaracal",
+      "looktype": 1961,
+      "colors": {
+        "1": [
+          82
+        ],
+        "2": [
+          97
+        ],
+        "3": [
+          76
+        ],
+        "4": [
+          76
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2857,
+      "name": "moonstone excavator",
+      "looktype": 1952,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 1
+    },
+    {
+      "id": 2858,
+      "name": "moonstone overseer",
+      "looktype": 1956,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": false,
+      "difficulty": 4,
+      "lookAddons": 0
+    },
+    {
+      "id": 2806,
+      "name": "The Moonsnow Magnolia",
+      "looktype": 1068,
+      "colors": {
+        "1": [
+          85
+        ],
+        "2": [
+          13
+        ],
+        "3": [
+          109
+        ],
+        "4": [
+          3
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 3
+    },
+    {
+      "id": 2812,
+      "name": "Mimar Haffar",
+      "looktype": 1953,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 0
+    },
+    {
+      "id": 2813,
+      "name": "Mimar Haffar",
+      "looktype": 1953,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 2
+    },
+    {
+      "id": 2815,
+      "name": "Maior Domus",
+      "looktype": 1959,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 2
+    },
+    {
+      "id": 2826,
+      "name": "Phosphorus",
+      "looktype": 1963,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 1
+    },
+    {
+      "id": 2827,
+      "name": "Phosphorus",
+      "looktype": 1955,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 1
+    },
+    {
+      "id": 2829,
+      "name": "Moonspawn Juggernaut",
+      "looktype": 1972,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          0
+        ],
+        "3": [
+          0
+        ],
+        "4": [
+          0
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 0
+    },
+    {
+      "id": 2832,
+      "name": "The Moonsnow Magnolia",
+      "looktype": 1068,
+      "colors": {
+        "1": [
+          85
+        ],
+        "2": [
+          13
+        ],
+        "3": [
+          109
+        ],
+        "4": [
+          3
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 3
+    },
+    {
+      "id": 2855,
+      "name": "Rakesh Moonfang",
+      "looktype": 1648,
+      "colors": {
+        "1": [
+          0
+        ],
+        "2": [
+          10
+        ],
+        "3": [
+          52
+        ],
+        "4": [
+          85
+        ]
+      },
+      "boss": true,
+      "difficulty": 0,
+      "lookAddons": 0
+    }
+  ]
+}

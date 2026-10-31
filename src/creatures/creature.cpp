@@ -577,6 +577,7 @@ void Creature::onCreatureMove(const std::shared_ptr<Creature> &creature, const s
 }
 
 void Creature::onDeath() {
+	attackReductionState.clear();
 	metrics::method_latency measure(__METRICS_METHOD_NAME__);
 	bool lastHitUnjustified = false;
 	bool mostDamageUnjustified = false;
@@ -877,9 +878,9 @@ void Creature::changeHealth(int32_t healthChange, bool sendHealthChange /* = tru
 
 void Creature::changeMana(int32_t manaChange) {
 	if (manaChange > 0) {
-		mana += std::min<int32_t>(manaChange, getMaxMana() - mana);
+		mana += static_cast<uint32_t>(std::min<int64_t>(manaChange, std::max<int64_t>(0, int64_t(getMaxMana()) - mana)));
 	} else {
-		mana = std::max<int32_t>(0, mana + manaChange);
+		mana = static_cast<uint32_t>(std::max<int64_t>(0, int64_t(mana) + manaChange));
 	}
 }
 
@@ -1358,6 +1359,7 @@ bool Creature::setMaster(const std::shared_ptr<Creature> &newMaster, bool reload
 		newMaster->m_summons.emplace_back(self);
 	}
 
+	if (oldMaster != newMaster) attackReductionState.clear();
 	m_master = newMaster;
 
 	if (oldMaster) {

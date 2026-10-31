@@ -298,6 +298,7 @@ class ConditionDamage final : public Condition {
 public:
 	ConditionDamage() = default;
 	ConditionDamage(ConditionId_t intiId, ConditionType_t initType, bool initBuff = false, uint32_t initSubId = 0);
+	std::shared_ptr<ConditionDamage> cloneWithElement(ConditionType_t type) const;
 
 	static void generateDamageList(int32_t amount, int32_t start, std::list<int32_t> &list);
 

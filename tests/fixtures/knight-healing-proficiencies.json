@@ -1,0 +1,429 @@
+{
+  "source": "proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",
+  "sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015",
+  "rows": [
+    {
+      "id": 6,
+      "name": "Sanguine 1H Sword",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 8,
+      "name": "Sanguine 1H Axe",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 9,
+      "name": "Sanguine 1H Club",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 10,
+      "name": "Sanguine 2H Sword",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 11,
+      "name": "Sanguine 2H Axe",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 12,
+      "name": "Sanguine 2H Club",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 17,
+      "name": "Grand Sanguine 1H Axe",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 18,
+      "name": "Grand Sanguine 1H Club",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 19,
+      "name": "Grand Sanguine 1H Sword",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 20,
+      "name": "Grand Sanguine 2H Sword",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 21,
+      "name": "Grand Sanguine 2H Club",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 22,
+      "name": "Grand Sanguine 2H Axe",
+      "level": 5,
+      "perk": 1,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 10.0
+      }
+    },
+    {
+      "id": 134,
+      "name": "Cobra 1H Club",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 9,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 135,
+      "name": "Cobra 1H Axe",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 10,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 136,
+      "name": "Cobra 1H Sword",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 8,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 139,
+      "name": "Lion 1H Club",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 9,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 140,
+      "name": "Lion 1H Axe",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 10,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 141,
+      "name": "Lion 1H Sword",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 8,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 144,
+      "name": "Falcon 1H Club",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 6,
+        "Type": 27,
+        "Value": 0.28
+      }
+    },
+    {
+      "id": 145,
+      "name": "Falcon 2H Sword",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 6,
+        "Type": 27,
+        "Value": 0.28
+      }
+    },
+    {
+      "id": 146,
+      "name": "Falcon 2H Axe",
+      "level": 3,
+      "perk": 2,
+      "value": {
+        "SkillId": 6,
+        "Type": 27,
+        "Value": 0.28
+      }
+    },
+    {
+      "id": 238,
+      "name": "Sword 1H Magic Sword",
+      "level": 1,
+      "perk": 0,
+      "value": {
+        "AugmentType": 6,
+        "SpellId": 158,
+        "Type": 5,
+        "Value": -30.0
+      }
+    },
+    {
+      "id": 238,
+      "name": "Sword 1H Magic Sword",
+      "level": 1,
+      "perk": 2,
+      "value": {
+        "SkillId": 8,
+        "Type": 27,
+        "Value": 0.1
+      }
+    },
+    {
+      "id": 249,
+      "name": "Club 1H Life Preserver",
+      "level": 1,
+      "perk": 0,
+      "value": {
+        "SkillId": 9,
+        "Type": 27,
+        "Value": 0.2
+      }
+    },
+    {
+      "id": 249,
+      "name": "Club 1H Life Preserver",
+      "level": 3,
+      "perk": 0,
+      "value": {
+        "AugmentType": 3,
+        "SpellId": 123,
+        "Type": 5,
+        "Value": 0.1
+      }
+    },
+    {
+      "id": 284,
+      "name": "Axe 1H Vile Ornamented Axe",
+      "level": 2,
+      "perk": 1,
+      "value": {
+        "SkillId": 10,
+        "Type": 27,
+        "Value": 0.1
+      }
+    },
+    {
+      "id": 308,
+      "name": "Sword 2H Avenger",
+      "level": 1,
+      "perk": 0,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 2.0
+      }
+    },
+    {
+      "id": 349,
+      "name": "Axe 2H Phantasmal Axe",
+      "level": 3,
+      "perk": 0,
+      "value": {
+        "SkillId": 10,
+        "Type": 27,
+        "Value": 0.16
+      }
+    },
+    {
+      "id": 407,
+      "name": "Axe 1H Plague Bite",
+      "level": 1,
+      "perk": 0,
+      "value": {
+        "AugmentType": 6,
+        "SpellId": 158,
+        "Type": 5,
+        "Value": -30.0
+      }
+    },
+    {
+      "id": 407,
+      "name": "Axe 1H Plague Bite",
+      "level": 2,
+      "perk": 0,
+      "value": {
+        "AugmentType": 3,
+        "SpellId": 158,
+        "Type": 5,
+        "Value": 0.25
+      }
+    },
+    {
+      "id": 407,
+      "name": "Axe 1H Plague Bite",
+      "level": 2,
+      "perk": 1,
+      "value": {
+        "SkillId": 10,
+        "Type": 27,
+        "Value": 0.15
+      }
+    },
+    {
+      "id": 423,
+      "name": "Club 2H Enchanted Staff",
+      "level": 1,
+      "perk": 0,
+      "value": {
+        "SkillId": 6,
+        "Type": 27,
+        "Value": 0.25
+      }
+    },
+    {
+      "id": 424,
+      "name": "Club 1H Light Mace",
+      "level": 2,
+      "perk": 0,
+      "value": {
+        "SkillId": 9,
+        "Type": 27,
+        "Value": 0.35
+      }
+    },
+    {
+      "id": 425,
+      "name": "Club 1H Queen's Sceptre",
+      "level": 2,
+      "perk": 1,
+      "value": {
+        "AugmentType": 3,
+        "SpellId": 123,
+        "Type": 5,
+        "Value": 0.1
+      }
+    },
+    {
+      "id": 431,
+      "name": "Club 1H Snake God's Sceptre",
+      "level": 0,
+      "perk": 0,
+      "value": {
+        "SkillId": 6,
+        "Type": 27,
+        "Value": 0.05
+      }
+    },
+    {
+      "id": 457,
+      "name": "Crypt 2H Sword",
+      "level": 5,
+      "perk": 0,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 7.0
+      }
+    },
+    {
+      "id": 458,
+      "name": "Crypt 2H Axe",
+      "level": 5,
+      "perk": 0,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 7.0
+      }
+    },
+    {
+      "id": 459,
+      "name": "Crypt 2H Club",
+      "level": 5,
+      "perk": 0,
+      "value": {
+        "SkillId": 1,
+        "Type": 27,
+        "Value": 7.0
+      }
+    }
+  ]
+}

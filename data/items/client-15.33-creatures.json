@@ -1,0 +1,275 @@
+{
+  "note": "HP/XP are sourced where available. Unpublished boss HP, attacks, armor, resistance magnitudes, loot rates and product weights are explicit server tuning, not official values. Maps and quest mechanics excluded. Corpse art matched visually; shared remains documented in docs.",
+  "creatures": [
+    {
+      "name": "Winged Jaracal",
+      "race_id": 2802,
+      "health": 8200,
+      "experience": 7830,
+      "corpse": 54647,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=wingedjaracal",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/winged_jaracal.lua"
+    },
+    {
+      "name": "Iceplume Strider",
+      "race_id": 2803,
+      "health": 8500,
+      "experience": 8150,
+      "corpse": 54333,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=iceplumestrider",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/iceplume_strider.lua"
+    },
+    {
+      "name": "Silverfrost Sentinel",
+      "race_id": 2804,
+      "health": 9500,
+      "experience": 8450,
+      "corpse": 54337,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=silverfrostsentinel",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/silverfrost_sentinel.lua"
+    },
+    {
+      "name": "True Feverbloom Asura",
+      "race_id": 2805,
+      "health": 8600,
+      "experience": 8600,
+      "corpse": 54674,
+      "source": "https://www.tibia.com/news/?subtopic=newsarchive (2026-10-20 XP update); https://tibianebula.com/en/creatures/true_feverbloom_asura/",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/true_feverbloom_asura.lua"
+    },
+    {
+      "name": "Radiant Warden",
+      "race_id": 2839,
+      "health": 38500,
+      "experience": 35540,
+      "corpse": 54368,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radiantwarden",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_warden.lua"
+    },
+    {
+      "name": "Devoted Radiant Warden",
+      "race_id": 2840,
+      "health": 44275,
+      "experience": 51280,
+      "corpse": 54368,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantwarden",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_warden.lua"
+    },
+    {
+      "name": "Radiant Paragon",
+      "race_id": 2841,
+      "health": 36000,
+      "experience": 34780,
+      "corpse": 54399,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radiantparagon",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_paragon.lua"
+    },
+    {
+      "name": "Devoted Radiant Paragon",
+      "race_id": 2842,
+      "health": 41400,
+      "experience": 50560,
+      "corpse": 54399,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantparagon",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_paragon.lua"
+    },
+    {
+      "name": "Radiant Acolyte",
+      "race_id": 2843,
+      "health": 34600,
+      "experience": 32960,
+      "corpse": 54419,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radiantacolyte",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_acolyte.lua"
+    },
+    {
+      "name": "Devoted Radiant Acolyte",
+      "race_id": 2844,
+      "health": 39790,
+      "experience": 47820,
+      "corpse": 54419,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantacolyte",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_acolyte.lua"
+    },
+    {
+      "name": "Radiant Templar",
+      "race_id": 2845,
+      "health": 37000,
+      "experience": 34520,
+      "corpse": 54403,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radianttemplar",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_templar.lua"
+    },
+    {
+      "name": "Devoted Radiant Templar",
+      "race_id": 2846,
+      "health": 42550,
+      "experience": 49900,
+      "corpse": 54403,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradianttemplar",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_templar.lua"
+    },
+    {
+      "name": "Radiant Inquisitor",
+      "race_id": 2847,
+      "health": 34800,
+      "experience": 32460,
+      "corpse": 54372,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radiantinquisitor",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_inquisitor.lua"
+    },
+    {
+      "name": "Devoted Radiant Inquisitor",
+      "race_id": 2848,
+      "health": 40020,
+      "experience": 47050,
+      "corpse": 54372,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantinquisitor",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_inquisitor.lua"
+    },
+    {
+      "name": "Radiant Zealot",
+      "race_id": 2849,
+      "health": 36500,
+      "experience": 35220,
+      "corpse": 54415,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=radiantzealot",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/radiant_zealot.lua"
+    },
+    {
+      "name": "Devoted Radiant Zealot",
+      "race_id": 2850,
+      "health": 41980,
+      "experience": 50500,
+      "corpse": 54415,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantzealot",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/devoted_radiant_zealot.lua"
+    },
+    {
+      "name": "Moonspawn Blightspitter",
+      "race_id": 2851,
+      "health": 8500,
+      "experience": 6670,
+      "corpse": 54439,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=moonspawnblightspitter",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/moonspawn_blightspitter.lua"
+    },
+    {
+      "name": "Moonspawn Oozecrown",
+      "race_id": 2852,
+      "health": 9200,
+      "experience": 7320,
+      "corpse": 54443,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=moonspawnoozecrown",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/moonspawn_oozecrown.lua"
+    },
+    {
+      "name": "Jaracal",
+      "race_id": 2856,
+      "health": 3200,
+      "experience": 2460,
+      "corpse": 54386,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=jaracal",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/jaracal.lua"
+    },
+    {
+      "name": "Moonstone Excavator",
+      "race_id": 2857,
+      "health": 5100,
+      "experience": 4670,
+      "corpse": 54342,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=moonstoneexcavator",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/moonstone_excavator.lua"
+    },
+    {
+      "name": "Moonstone Overseer",
+      "race_id": 2858,
+      "health": 5450,
+      "experience": 4920,
+      "corpse": 54678,
+      "source": "https://www.tibia.com/library/?subtopic=creatures&race=moonstoneoverseer",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/moonstone_overseer.lua"
+    },
+    {
+      "name": "The Moonsnow Magnolia",
+      "race_id": 2806,
+      "health": 52000,
+      "experience": 240000,
+      "corpse": 54722,
+      "source": "https://www.tibiawiki.com.br/index.php?stable=1&title=The_Moonsnow_Magnolia",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/the_moonsnow_magnolia.lua"
+    },
+    {
+      "name": "Mimar Haffar",
+      "race_id": 2812,
+      "health": 450000,
+      "experience": 3500000,
+      "corpse": 54346,
+      "source": "Server tuning (unpublished official health/combat); see docs/systems/client-15-33-update.md",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/mimar_haffar.lua"
+    },
+    {
+      "name": "Maior Domus",
+      "race_id": 2815,
+      "health": 500000,
+      "experience": 3500000,
+      "corpse": 54428,
+      "source": "Server tuning (unpublished official health/combat); see docs/systems/client-15-33-update.md",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/maior_domus.lua"
+    },
+    {
+      "name": "Phosphorus",
+      "race_id": 2826,
+      "health": 1000000,
+      "experience": 16000000,
+      "corpse": 54354,
+      "source": "Server tuning (unpublished official health/combat); see docs/systems/client-15-33-update.md",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/phosphorus.lua"
+    },
+    {
+      "name": "Moonspawn Juggernaut",
+      "race_id": 2829,
+      "health": 80000,
+      "experience": 0,
+      "corpse": 54443,
+      "source": "Server tuning (unpublished official health/combat); see docs/systems/client-15-33-update.md",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/moonspawn_juggernaut.lua"
+    },
+    {
+      "name": "Rakesh Moonfang",
+      "race_id": 2855,
+      "health": 25500,
+      "experience": 25500,
+      "corpse": 54386,
+      "source": "Server tuning (unpublished official health/combat); see docs/systems/client-15-33-update.md",
+      "combat": "server-tuned",
+      "script": "data-otservbr-global/monster/quests/moonsilver/rakesh_moonfang.lua"
+    }
+  ]
+}

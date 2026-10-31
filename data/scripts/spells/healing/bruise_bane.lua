@@ -4,10 +4,8 @@ combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_MAGIC_BLUE)
 combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)
 combat:setParameter(COMBAT_PARAM_AGGRESSIVE, false)
 
-function onGetFormulaValues(_player, level, magicLevel) -- already compared to the official tibia | compared date: 08/03/21(m/d/y) (need more chars test accuracy)
-	local min = (level * 0.2 + magicLevel * 1.795)
-	local max = (level * 0.2 + magicLevel * 1.795) + 5
-	return min, max
+function onGetFormulaValues(player, level, magicLevel)
+	return KnightSpellFormula.healingBounds(player, level, magicLevel, 15)
 end
 
 combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
@@ -23,9 +21,9 @@ spell:words("exura infir ico")
 spell:group("healing")
 spell:vocation("knight;true", "elite knight;true")
 spell:castSound(SOUND_EFFECT_TYPE_SPELL_BRUISE_BANE)
-spell:id(170)
-spell:cooldown(1000)
-spell:groupCooldown(1000)
+spell:id(175)
+spell:cooldown(2000)
+spell:groupCooldown(2000)
 spell:level(1)
 spell:mana(10)
 spell:isSelfTarget(true)

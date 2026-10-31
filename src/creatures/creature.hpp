@@ -10,6 +10,7 @@
 #pragma once
 
 #include "creatures/creatures_definitions.hpp"
+#include "creatures/combat/attack_reduction.hpp"
 #include "game/game_definitions.hpp"
 #include "game/movement/position.hpp"
 #include "items/thing.hpp"
@@ -150,6 +151,7 @@ public:
 
 	virtual void setID() = 0;
 	void setRemoved() {
+		attackReductionState.clear();
 		isInternalRemoved = true;
 	}
 
@@ -461,6 +463,7 @@ public:
 
 	void removeMaster() {
 		if (getMaster()) {
+			attackReductionState.clear();
 			m_master.reset();
 		}
 	}
@@ -644,6 +647,8 @@ public:
 	void setSkillLoss(bool newSkillLoss) {
 		this->skillLoss = newSkillLoss;
 	}
+	AttackReductionState &attackReduction() { return attackReductionState; }
+
 	void setUseDefense(bool useDefense) {
 		canUseDefense = useDefense;
 	}
@@ -936,6 +941,7 @@ protected:
 	bool hiddenHealth = false;
 	bool floorChange = false;
 	bool canUseDefense = true;
+	AttackReductionState attackReductionState;
 	bool moveLocked = false;
 	bool directionLocked = false;
 	bool hasFollowPath = false;

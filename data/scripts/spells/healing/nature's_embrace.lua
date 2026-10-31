@@ -4,10 +4,9 @@ combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_MAGIC_BLUE)
 combat:setParameter(COMBAT_PARAM_AGGRESSIVE, 0)
 combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)
 
-function onGetFormulaValues(player, level, maglevel)
-	local min = (level / 2.5) + (maglevel * 20)
-	local max = (level / 2.5) + (maglevel * 28) -- TODO: Formulas (TibiaWiki says x2 but need more acurracy)
-	return min, max
+function onGetFormulaValues(player, level, magicLevel)
+	-- Empirical bounds, explicitly documented in druid-rebalance.md.
+	return DruidSpellFormula.bounds(level, magicLevel, 25, 1900, 2100)
 end
 
 combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
@@ -29,7 +28,7 @@ spell:id(242)
 spell:name("Nature's Embrace")
 spell:words("exura gran sio")
 spell:castSound(SOUND_EFFECT_TYPE_SPELL_NATURES_EMBRACE)
-spell:level(300)
+spell:level(275)
 spell:mana(400)
 spell:isPremium(true)
 spell:needTarget(true)

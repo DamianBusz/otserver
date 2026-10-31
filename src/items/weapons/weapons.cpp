@@ -130,6 +130,7 @@ bool Weapon::isLoadedScriptId() const {
 
 void Weapon::configureWeapon(const ItemType &it) {
 	id = it.id;
+	weaponType = it.weaponType;
 }
 
 int32_t Weapon::playerWeaponCheck(const std::shared_ptr<Player> &player, const std::shared_ptr<Creature> &target, int32_t shootRange) const {
@@ -150,7 +151,7 @@ int32_t Weapon::playerWeaponCheck(const std::shared_ptr<Player> &player, const s
 			return 0;
 		}
 
-		if (player->getMana() < getManaCost(player)) {
+		if (weaponType != WEAPON_WAND && player->getMana() < getManaCost(player)) {
 			return 0;
 		}
 
@@ -200,7 +201,7 @@ CombatDamage Weapon::getCombatDamage(CombatDamage combat, const std::shared_ptr<
 	const int16_t elementalAttack = getElementDamageValue();
 	const int32_t weaponAttack = std::max<int32_t>(0, item->getAttack());
 	const int32_t playerSkill = player->getWeaponSkill(item);
-	const float attackFactor = player->getAttackFactor(); // full atk, balanced or full defense
+	const float attackFactor = player->getAttackFactor(); // permanent full-attack scaling
 
 	// Getting values factores
 	const int32_t totalAttack = elementalAttack + weaponAttack;
@@ -343,11 +344,12 @@ void Weapon::onUsedWeapon(const std::shared_ptr<Player> &player, const std::shar
 
 	const uint32_t manaCost = getManaCost(player);
 	if (manaCost != 0) {
-		player->addManaSpent(manaCost);
-		player->changeMana(-static_cast<int32_t>(manaCost));
-
-		if (g_configManager().getBoolean(REFUND_BEGINNING_WEAPON_MANA) && (item->getName() == "wand of vortex" || item->getName() == "snakebite rod")) {
-			player->changeMana(static_cast<int32_t>(manaCost));
+		if (weaponType == WEAPON_WAND) {
+			// Rods and wands generate mana once; the legacy starter refund is obsolete.
+			player->changeMana(static_cast<int32_t>(std::min<uint32_t>(manaCost, INT32_MAX)));
+		} else {
+			player->addManaSpent(manaCost);
+			player->changeMana(-static_cast<int32_t>(std::min<uint32_t>(manaCost, INT32_MAX)));
 		}
 	}
 
@@ -400,7 +402,7 @@ uint32_t Weapon::getManaCost(const std::shared_ptr<Player> &player) const {
 		return 0;
 	}
 
-	return (player->getMaxMana() * manaPercent) / 100;
+	return static_cast<uint32_t>(std::min<uint64_t>(uint64_t(player->getMaxMana()) * manaPercent / 100, UINT32_MAX));
 }
 
 int32_t Weapon::getHealthCost(const std::shared_ptr<Player> &player) const {

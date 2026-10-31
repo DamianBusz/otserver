@@ -186,12 +186,126 @@ Player::~Player() {
 	logged = false;
 }
 
+void Player::sendElementalStance() const {
+	if (!client || getOperatingSystem() < CLIENTOS_OTCLIENT_LINUX) {
+		return;
+	}
+	const char* stance = "none";
+	switch (elementalStanceState.getSelected()) {
+		case SpellElement::Fire: stance = "flames"; break;
+		case SpellElement::Energy: stance = "thunder"; break;
+		case SpellElement::Death: stance = "decay"; break;
+		default: break;
+	}
+	if (paladinStance == PaladinStance::Sharpshooter) {
+		stance = "sharpshooter";
+	} else if (paladinStance == PaladinStance::DivineDefiance) {
+		stance = "divine-defiance";
+	}
+	if (druidStance == DruidStance::SharedConservation) {
+		stance = "shared-conservation";
+	} else if (druidStance == DruidStance::ElementalSynthesis) {
+		stance = "elemental-synthesis";
+	}
+	if (knightStance == KnightStance::BloodRage) {
+		stance = "blood-rage";
+	} else if (knightStance == KnightStance::Protector) {
+		stance = "protector";
+	}
+	NetworkMessage message;
+	message.addByte(0x32);
+	message.addByte(86);
+	message.addString(stance);
+	sendNetworkMessage(message);
+}
+
+bool Player::setPaladinStance(PaladinStance stance) {
+	if (stance != PaladinStance::None && stance != PaladinStance::Sharpshooter && stance != PaladinStance::DivineDefiance) {
+		return false;
+	}
+	if (getPlayerVocationEnum() != VOCATION_PALADIN_CIP
+	    || (stance != PaladinStance::None && (!isPromoted() || getLevel() < 20 || !isPremium()))) {
+		return false;
+	}
+	paladinStance = stance;
+	sendSkills();
+	sendStats();
+	sendElementalStance();
+	return true;
+}
+
+bool Player::applyManaBuffer(const std::shared_ptr<Creature> &attacker, int64_t incomingDamage, uint64_t now) {
+	const auto vocationId = getPlayerVocationEnum();
+	if (vocationId != VOCATION_DRUID_CIP && vocationId != VOCATION_SORCERER_CIP) return false;
+	const auto result = manaBuffer.consume(incomingDamage, getHealth(), getMana(), getMaxMana(), now);
+	uint32_t remaining = result.manaSpent;
+	while (remaining > 0) {
+		const auto chunk = static_cast<int32_t>(std::min<uint32_t>(remaining, INT32_MAX));
+		drainMana(attacker, chunk);
+		remaining -= chunk;
+	}
+	if (result.manaSpent > 0) g_game().addMagicEffect(getPosition(), CONST_ME_LOSEENERGY);
+	return result.survived;
+}
+
+bool Player::setDruidStance(DruidStance stance) {
+	if (stance != DruidStance::None && stance != DruidStance::SharedConservation && stance != DruidStance::ElementalSynthesis) {
+		return false;
+	}
+	if (stance != DruidStance::None && (getPlayerVocationEnum() != VOCATION_DRUID_CIP || !isPromoted() || getLevel() < 20 || !isPremium())) {
+		return false;
+	}
+	druidStance = stance;
+	sendSkills();
+	sendStats();
+	sendElementalStance();
+	return true;
+}
+
+bool Player::setKnightStance(KnightStance stance) {
+	if (stance != KnightStance::None && stance != KnightStance::BloodRage && stance != KnightStance::Protector) {
+		return false;
+	}
+	if (stance != KnightStance::None && (getPlayerVocationEnum() != VOCATION_KNIGHT_CIP || !isPromoted() || getLevel() < 20 || !isPremium())) {
+		return false;
+	}
+	// A character saved with the old timed spell must never stack it with a stance.
+	if (const auto legacy = getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, static_cast<uint32_t>(AttrSubId_t::BloodRageProtector))) {
+		removeCondition(legacy);
+	}
+	knightStance = stance;
+	sendSkills();
+	sendStats();
+	sendElementalStance();
+	return true;
+}
+
 bool Player::setVocation(uint16_t vocId) {
 	const auto &voc = g_vocations().getVocation(vocId);
 	if (!voc) {
 		return false;
 	}
 	vocation = voc;
+	manaBuffer.reset();
+	if (getPlayerVocationEnum() != VOCATION_KNIGHT_CIP || !isPromoted()) {
+		if (knightStance != KnightStance::None && getGUID() != 0) {
+			kv()->set("knight-stance", std::string("none"));
+		}
+		knightStance = KnightStance::None;
+	}
+	if (getPlayerVocationEnum() != VOCATION_DRUID_CIP || !isPromoted()) {
+		if (druidStance != DruidStance::None && getGUID() != 0) {
+			kv()->set("druid-stance", std::string("none"));
+		}
+		druidStance = DruidStance::None;
+	}
+	if (getPlayerVocationEnum() != VOCATION_PALADIN_CIP || !isPromoted()) {
+		paladinStance = PaladinStance::None;
+	}
+	if (getPlayerVocationEnum() != VOCATION_SORCERER_CIP) {
+		elementalStanceState.select(SpellElement::None);
+	}
+	sendElementalStance();
 
 	updateRegeneration();
 	g_game().addPlayerVocation(static_self_cast<Player>());
@@ -620,39 +734,17 @@ uint16_t Player::calculateFlatDamageHealing() const {
 }
 
 uint16_t Player::attackTotal(uint16_t flatBonus, uint16_t equipment, uint16_t skill) const {
-	double fightFactor = 0;
-	switch (fightMode) {
-		case FIGHTMODE_ATTACK: {
-			fightFactor = 1.2f * equipment;
-			break;
-		}
-
-		case FIGHTMODE_BALANCED: {
-			fightFactor = 1.0f * equipment;
-			break;
-		}
-
-		case FIGHTMODE_DEFENSE: {
-			fightFactor = 0.6f * equipment;
-			break;
-		}
-
-		default: {
-			fightFactor = 1.0f * equipment;
-			break;
-		}
-	}
-
-	fightFactor = std::floor(fightFactor);
-
+	// The former offensive equipment bonus is now unconditional.
+	const double equipmentValue = (static_cast<uint32_t>(equipment) * 120) / 100;
 	const double skillFactor = (skill + 4) / 28.;
-
-	return flatBonus + (fightFactor * skillFactor);
+	const double total = flatBonus + equipmentValue * skillFactor;
+	return static_cast<uint16_t>(std::min<double>(total, std::numeric_limits<uint16_t>::max()));
 }
 
 uint16_t Player::attackRawTotal(uint16_t flatBonus, uint16_t equipment, uint16_t skill) const {
 	const double skillFactor = (skill + 4) / 28.;
-	return flatBonus + (equipment * skillFactor);
+	const double total = flatBonus + equipment * skillFactor;
+	return static_cast<uint16_t>(std::min<double>(total, std::numeric_limits<uint16_t>::max()));
 }
 
 int32_t Player::getArmor() const {
@@ -747,30 +839,22 @@ void Player::getShieldAndWeapon(std::shared_ptr<Item> &shield, std::shared_ptr<I
 	}
 }
 
+std::optional<int32_t> Player::getShieldSpellDefense() const {
+	std::shared_ptr<Item> shield, weapon;
+	getShieldAndWeapon(shield, weapon);
+	if (!shield || Item::items[shield->getID()].m_primaryType != "shields") {
+		return std::nullopt;
+	}
+	const int64_t defense = int64_t(shield->getDefense()) + (weapon ? int64_t(weapon->getExtraDefense()) : 0);
+	return static_cast<int32_t>(std::clamp<int64_t>(defense, 0, INT32_MAX));
+}
+
 float Player::getMitigation() const {
 	return wheel().calculateMitigation();
 }
 
 double Player::getCombatTacticsMitigation() const {
-	double fightFactor = 0.0;
-	switch (fightMode) {
-		case FIGHTMODE_ATTACK: {
-			fightFactor = 0.8f;
-			break;
-		}
-		case FIGHTMODE_BALANCED: {
-			fightFactor = 1.0f;
-			break;
-		}
-		case FIGHTMODE_DEFENSE: {
-			fightFactor = 1.2f;
-			break;
-		}
-		default:
-			break;
-	}
-
-	return fightFactor;
+	return 1.0;
 }
 
 int32_t Player::getDefense(bool sendToClient /* = false*/) const {
@@ -789,10 +873,6 @@ int32_t Player::getDefense(bool sendToClient /* = false*/) const {
 		defenseValue = (weapon != nullptr)
 			? shield->getDefense() + weapon->getExtraDefense()
 			: shield->getDefense();
-		// Wheel of destiny - Combat Mastery
-		if (shield->getDefense() > 0) {
-			defenseValue += wheel().getMajorStatConditional("Combat Mastery", WheelMajor_t::DEFENSE);
-		}
 		defenseSkill = getSkillLevel(SKILL_SHIELD);
 	}
 
@@ -800,13 +880,7 @@ int32_t Player::getDefense(bool sendToClient /* = false*/) const {
 	defenseValue += weaponProficiency().getStat(WeaponProficiencyBonus_t::WEAPON_SHIELD_MODIFIER);
 
 	if (defenseSkill == 0) {
-		switch (fightMode) {
-			case FIGHTMODE_ATTACK:
-			case FIGHTMODE_BALANCED:
-				return 1;
-			case FIGHTMODE_DEFENSE:
-				return 2;
-		}
+		return 1;
 	}
 
 	auto defenseScalingFactor = shield ? 0.16f : (weapon && weapon->getDefense() > 0 ? 0.146f : 0.15f);
@@ -826,9 +900,6 @@ uint16_t Player::getDefenseEquipment() const {
 
 	if (shield) {
 		defenseValue = weapon != nullptr ? shield->getDefense() + weapon->getExtraDefense() : shield->getDefense();
-		if (shield->getDefense() > 0) {
-			defenseValue += wheel().getMajorStatConditional("Combat Mastery", WheelMajor_t::DEFENSE);
-		}
 	}
 
 	defenseValue += weaponProficiency().getStat(WeaponProficiencyBonus_t::DEFENSE_BONUS);
@@ -838,37 +909,13 @@ uint16_t Player::getDefenseEquipment() const {
 }
 
 float Player::getAttackFactor() const {
-	switch (fightMode) {
-		case FIGHTMODE_ATTACK:
-			return 1.0f;
-		case FIGHTMODE_BALANCED:
-			return 0.75f;
-		case FIGHTMODE_DEFENSE:
-			return 0.5f;
-		default:
-			return 1.0f;
-	}
+	// Weapon coefficients already describe full offensive damage. Do not add
+	// the equipment display's 20% bonus a second time here.
+	return 1.0f;
 }
 
-float Player::getDefenseFactor(bool sendToClient /* = false*/) const {
-	switch (fightMode) {
-		case FIGHTMODE_ATTACK:
-			if (sendToClient) {
-				return 0.5f;
-			}
-
-			return (OTSYS_TIME() - lastAttack) < getAttackSpeed() ? 0.5f : 1.0f;
-		case FIGHTMODE_BALANCED:
-			if (sendToClient) {
-				return 0.75f;
-			}
-
-			return (OTSYS_TIME() - lastAttack) < getAttackSpeed() ? 0.75f : 1.0f;
-		case FIGHTMODE_DEFENSE:
-			return 1.0f;
-		default:
-			return 1.0f;
-	}
+float Player::getDefenseFactor(bool /*sendToClient*/) const {
+	return 1.0f;
 }
 
 std::vector<double> Player::getDamageAccuracy(const ItemType &it) const {
@@ -1041,6 +1088,7 @@ void Player::setParty(std::shared_ptr<Party> newParty) {
 	}
 
 	m_party = std::move(newParty);
+	++partyMembershipRevision;
 	ExpertPvp::refreshAllVisibleSituationMarks();
 }
 
@@ -3990,6 +4038,7 @@ void Player::doAttacking(uint32_t interval) {
 
 	if ((OTSYS_TIME() - lastAttack) >= getAttackSpeed()) {
 		bool result = false;
+		AttackReductionState::Swing swing(attackReduction(), static_cast<uint64_t>(OTSYS_TIME()));
 
 		const auto &tool = getWeapon();
 		const auto &weapon = g_weapons().getWeapon(tool);
@@ -4010,6 +4059,7 @@ void Player::doAttacking(uint32_t interval) {
 			result = Weapon::useFist(static_self_cast<Player>(), attackedCreature);
 		}
 
+		swing.finish(result);
 		const auto &task = createPlayerTask(
 			std::max<uint32_t>(SCHEDULER_MINTICKS, delay), [self = std::weak_ptr<Creature>(getCreature())] {
 				if (const auto &creature = self.lock()) {
@@ -4033,6 +4083,9 @@ void Player::doAttacking(uint32_t interval) {
 }
 
 void Player::death(const std::shared_ptr<Creature> &lastHitCreature) {
+	manaBuffer.reset();
+	++delayedSpellGeneration;
+	elementalStanceState.clearCharge();
 	if (!g_configManager().getBoolean(TOGGLE_MOUNT_IN_PZ) && isMounted()) {
 		dismount();
 		g_game().internalCreatureChangeOutfit(getPlayer(), defaultOutfit);
@@ -6212,8 +6265,9 @@ void Player::setChaseMode(bool mode) {
 	}
 }
 
-void Player::setFightMode(FightMode_t mode) {
-	fightMode = mode;
+void Player::setFightMode(FightMode_t /*mode*/) {
+	// Consume legacy protocol requests without restoring removed combat modes.
+	fightMode = FIGHTMODE_ATTACK;
 
 	sendStats();
 	sendSkills();
@@ -7476,13 +7530,13 @@ uint16_t Player::getSkillLevel(skills_t skill) const {
 		return 0;
 	}
 
-	auto skillLevel = getLoyaltySkill(skill);
-	skillLevel = std::max<int32_t>(0, skillLevel + varSkills[skill]);
+	int64_t skillLevel = getLoyaltySkill(skill);
+	skillLevel = std::max<int64_t>(0, skillLevel + varSkills[skill]);
 
 	const auto &maxValuePerSkill = getMaxValuePerSkill();
 	if (const auto it = maxValuePerSkill.find(skill);
 	    it != maxValuePerSkill.end()) {
-		skillLevel = std::min<int32_t>(it->second, skillLevel);
+		skillLevel = std::min<int64_t>(it->second, skillLevel);
 	}
 
 	// Wheel of destiny
@@ -7501,7 +7555,6 @@ uint16_t Player::getSkillLevel(skills_t skill) const {
 		skillLevel += m_wheelPlayer.getStat(WheelStat_t::MANA_LEECH);
 	} else if (skill == SKILL_CRITICAL_HIT_DAMAGE) {
 		skillLevel += m_wheelPlayer.getStat(WheelStat_t::CRITICAL_DAMAGE);
-		skillLevel += m_wheelPlayer.getMajorStatConditional("Combat Mastery", WheelMajor_t::CRITICAL_DMG_2);
 		skillLevel += m_wheelPlayer.getMajorStatConditional("Ballistic Mastery", WheelMajor_t::CRITICAL_DMG);
 		skillLevel += m_wheelPlayer.checkAvatarSkill(WheelAvatarSkill_t::CRITICAL_DAMAGE);
 		skillLevel += m_weaponProficiency.getGeneralCritical().damage * 10000;
@@ -7512,13 +7565,16 @@ uint16_t Player::getSkillLevel(skills_t skill) const {
 	// Weapon proficiency
 	const auto weaponProficiencySkill = m_weaponProficiency.getSkillBonus(skill);
 	skillLevel += weaponProficiencySkill;
+	if (skill == SKILL_DISTANCE) {
+		return PaladinStances::distanceSkill(paladinStance, skillLevel);
+	}
 
 	const int32_t avatarCritChance = m_wheelPlayer.checkAvatarSkill(WheelAvatarSkill_t::CRITICAL_CHANCE);
 	if (skill == SKILL_CRITICAL_HIT_CHANCE && avatarCritChance > 0) {
 		skillLevel = avatarCritChance; // 100%
 	}
 
-	return std::min<uint16_t>(std::numeric_limits<uint16_t>::max(), std::max<uint16_t>(0, static_cast<uint16_t>(skillLevel)));
+	return KnightStances::skill(knightStance, skill, skillLevel);
 }
 
 bool Player::isAccessPlayer() const {
@@ -7605,6 +7661,12 @@ void Player::setPerfectShotDamage(uint8_t range, int32_t damage) {
 
 int32_t Player::getSpecializedMagicLevel(CombatType_t combat, bool useCharges) const {
 	int32_t result = specializedMagicLevel[combatTypeToIndex(combat)];
+	if (combat == COMBAT_ICEDAMAGE || combat == COMBAT_EARTHDAMAGE) {
+		result += DruidStances::specializedMagic(druidStance, getMagicLevel());
+	}
+	if (combat == COMBAT_HOLYDAMAGE || combat == COMBAT_HEALING) {
+		result += PaladinStances::specializedMagic(paladinStance, getSkillLevel(SKILL_DISTANCE));
+	}
 	result += m_wheelPlayer.getSpecializedMagic(combat);
 	result += m_weaponProficiency.getSpecializedMagic(combat);
 	for (const auto &item : getEquippedItems()) {
@@ -12319,6 +12381,7 @@ void Player::onRemoveCreature(const std::shared_ptr<Creature> &creature, bool is
 	Creature::onRemoveCreature(creature, isLogout);
 
 	if (const auto &player = getPlayer(); player == creature) {
+		manaBuffer.reset();
 		if (isLogout) {
 			onDeEquipInventory();
 

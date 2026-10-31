@@ -713,7 +713,7 @@ return function(api)
 			return false
 		end
 		for _, task in ipairs(tasks) do
-			if task.state ~= api.taskState.notSelected then
+			if task.state ~= api.taskState.notSelected and task.state ~= api.taskState.selected then
 				return false
 			end
 		end

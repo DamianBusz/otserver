@@ -5,9 +5,7 @@ combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)
 combat:setParameter(COMBAT_PARAM_AGGRESSIVE, false)
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level * 0.2 + magicLevel * 70) + 438
-	local max = (level * 0.2 + magicLevel * 92) + 544
-	return min, max
+	return KnightSpellFormula.healingBounds(player, level, magicLevel, 500)
 end
 
 combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
@@ -24,10 +22,10 @@ spell:group("healing")
 spell:vocation("knight;true", "elite knight;true")
 spell:castSound(SOUND_EFFECT_TYPE_SPELL_INTENSE_WOUND_CLEANSING)
 spell:id(158)
-spell:cooldown(600000) -- 600 sec
-spell:groupCooldown(1000)
+spell:cooldown(120000)
+spell:groupCooldown(2000)
 spell:level(80)
-spell:mana(200)
+spell:mana(300)
 spell:isSelfTarget(true)
 spell:isAggressive(false)
 spell:isPremium(true)

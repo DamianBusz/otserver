@@ -8,6 +8,8 @@
  */
 
 #include "server/network/protocol/protocol.hpp"
+#include "server/network/protocol/protocolgame.hpp"
+#include "enums/weapon_proficiency.hpp"
 #include "server/network/protocol/protocol_profile.hpp"
 #include "server/network/protocol/protocol_session_hint.hpp"
 #include "server/network/protocol/transport_codec.hpp"
@@ -365,4 +367,63 @@ TEST(SessionHintTest, ConsumeReturnsMatchedAssetProfile) {
 	const auto matchedProfile = store.consumeAndResolveProfile(*lease, session, character, 860);
 	ASSERT_TRUE(matchedProfile);
 	EXPECT_EQ(ProtocolProfileId::Cipsoft860CanaryExtended, *matchedProfile);
+}
+
+TEST(ProtocolProfileRegistryTest, Current1533ResolvesAllLoginEntryPoints) {
+	const auto *profile = ProtocolProfileRegistry::resolveByClientVersion(1533, ClientWireFamily::CipsoftVanilla);
+	ASSERT_NE(nullptr, profile);
+	EXPECT_EQ(ProtocolProfileId::Current, profile->id);
+	EXPECT_EQ(1533, profile->clientVersion);
+	EXPECT_TRUE(profile->hasFeature(ProtocolFeature::OfficialWeaponProficiencyPayload));
+	EXPECT_NE(nullptr, ProtocolProfileRegistry::resolveAccountLoginLayout(1533));
+	EXPECT_NE(nullptr, ProtocolProfileRegistry::resolveGameLoginLayout(1533));
+	EXPECT_EQ(nullptr, ProtocolProfileRegistry::resolveByClientVersion(1532, ClientWireFamily::CipsoftVanilla));
+}
+
+TEST(WeaponProficiencyPacketTest, VerifiedBuildsPreserveNextOpcodeBoundary) {
+	const auto* profile = ProtocolProfileRegistry::getProfile(ProtocolProfileId::Current);
+	std::array<ProficiencyPerk, 2> perks;
+	perks[0].level = 1;
+	perks[0].index = 2;
+	perks[1].level = 7;
+	perks[1].index = 0;
+	// 15.33.8791c6's C4 byte reader consumes u16 weapon, u32 XP,
+	// u8 selection count, (u8 level, u8 index) pairs, then u8 detail count.
+	// The following ping opcode must remain outside that payload.
+	constexpr std::array<uint8_t, 14> expected { 0xC4, 0xD7, 0xCF, 0x78, 0x56, 0x34, 0x12, 2, 1, 2, 7, 0, 0, 0x1D };
+	for (const auto* build : { "15.33.8791c6", "15.25.794c2e", "15.25.d96c64" }) {
+		SCOPED_TRACE(build);
+		NetworkMessage msg;
+		ProtocolGamePackets::writeWeaponProficiencyWindow(msg, 53207, 0x12345678, perks, profile, build);
+		msg.addByte(0x1D);
+		ASSERT_EQ(expected.size(), msg.getLength());
+		EXPECT_EQ(0, std::memcmp(expected.data(), msg.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION, expected.size()));
+	}
+
+	NetworkMessage empty;
+	ProtocolGamePackets::writeWeaponProficiencyWindow(empty, 0, 0, {}, profile, "15.33.8791c6");
+	empty.addByte(0x1D);
+	constexpr std::array<uint8_t, 10> expectedEmpty { 0xC4, 0, 0, 0, 0, 0, 0, 0, 0, 0x1D };
+	ASSERT_EQ(expectedEmpty.size(), empty.getLength());
+	EXPECT_EQ(0, std::memcmp(expectedEmpty.data(), empty.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION, expectedEmpty.size()));
+}
+
+TEST(WeaponProficiencyPacketTest, UnknownBuildsAndLegacyProfilesKeepShortPayload) {
+	constexpr std::array<uint8_t, 9> expected { 0xC4, 0, 0, 0, 0, 0, 0, 0, 0x1D };
+	const auto* current = ProtocolProfileRegistry::getProfile(ProtocolProfileId::Current);
+	for (const auto* build : { "", "15.25.unknown", "15.33.unknown", "15.34.8791c6" }) {
+		SCOPED_TRACE(build);
+		NetworkMessage msg;
+		ProtocolGamePackets::writeWeaponProficiencyWindow(msg, 0, 0, {}, current, build);
+		msg.addByte(0x1D);
+		ASSERT_EQ(expected.size(), msg.getLength());
+		EXPECT_EQ(0, std::memcmp(expected.data(), msg.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION, expected.size()));
+	}
+	for (const auto* profile : { ProtocolProfileRegistry::getProfile(ProtocolProfileId::Tibia1100), static_cast<const ProtocolProfile*>(nullptr) }) {
+		NetworkMessage msg;
+		ProtocolGamePackets::writeWeaponProficiencyWindow(msg, 0, 0, {}, profile, "15.33.8791c6");
+		msg.addByte(0x1D);
+		ASSERT_EQ(expected.size(), msg.getLength());
+		EXPECT_EQ(0, std::memcmp(expected.data(), msg.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION, expected.size()));
+	}
 }

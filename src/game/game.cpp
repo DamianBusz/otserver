@@ -8,6 +8,7 @@
  */
 
 #include "game/game.hpp"
+#include "creatures/players/components/druid_healing.hpp"
 
 #include "config/configmanager.hpp"
 #include "creatures/appearance/mounts/mounts.hpp"
@@ -879,6 +880,10 @@ void Game::start(ServiceManager* manager) {
 	manager->add<ProtocolStatus>(static_cast<uint16_t>(g_configManager().getNumber(STATUS_PORT)));
 
 	serviceManager = manager;
+	// One world-commit sweep, no per-player callbacks or retained owners.
+	[[maybe_unused]] auto partyTrackingEvent = g_dispatcher().cycleEvent(
+		PartyTracking::INTERVAL_MS, [] { g_game().updatePartyTracking(); }, "Game::updatePartyTracking"
+	);
 
 	const auto now = getTimeNow();
 	const tm* tms = localtime(&now);
@@ -921,6 +926,23 @@ void Game::start(ServiceManager* manager) {
 
 GameState_t Game::getGameState() const {
 	return gameState;
+}
+
+void Game::updatePartyTracking() {
+	if (getGameState() == GAME_STATE_SHUTDOWN) {
+		return;
+	}
+	for (const auto &[id, player] : getPlayers()) {
+		if (player->client) {
+			player->client->refreshPartyTracking();
+		}
+	}
+	// Death-screen sessions are removed from players before the connection ends.
+	for (const auto &[name, weakPlayer] : m_deadPlayers) {
+		if (const auto player = weakPlayer.lock(); player && player->client) {
+			player->client->refreshPartyTracking();
+		}
+	}
 }
 
 void Game::setWorldType(WorldType_t type) {
@@ -7887,6 +7909,12 @@ bool Game::combatBlockHit(CombatDamage &damage, const std::shared_ptr<Creature> 
 
 	// Skill dodge (ruse)
 	if (targetPlayer) {
+		if (!condition && !field && attacker && attacker != target
+		    && PaladinStances::canDodge(targetPlayer->getPaladinStance(), target->getPosition(), attacker->getPosition())
+		    && uniform_random(1, 100) <= 12) {
+			InternalGame::sendBlockEffect(BLOCK_DODGE, damage.primary.type, target->getPosition(), attacker);
+			return true;
+		}
 		auto chance = targetPlayer->getDodgeChance();
 		if ((chance > 0 && uniform_random(0, 10000) < chance) || damage.hazardDodge) {
 			InternalGame::sendBlockEffect(BLOCK_DODGE, damage.primary.type, target->getPosition(), attacker);
@@ -8262,25 +8290,88 @@ float Game::pvpLevelDifferenceDamageMultiplier(const std::shared_ptr<Player> &at
 
 // Wheel of destiny combat helpers
 void Game::applyWheelOfDestinyHealing(CombatDamage &damage, const std::shared_ptr<Player> &attackerPlayer, std::shared_ptr<Creature> target) {
-	damage.primary.value += (damage.primary.value * damage.healingMultiplier) / 100.;
-
-	if (attackerPlayer) {
-		damage.primary.value += attackerPlayer->wheel().getStat(WheelStat_t::HEALING);
-
-		if (damage.secondary.value != 0) {
-			damage.secondary.value += attackerPlayer->wheel().getStat(WheelStat_t::HEALING);
+	if (damage.healingKind == HealingKind::HealingLink) return;
+	if (damage.healingKind == HealingKind::Primary) {
+		if (DruidHealing::isSharedSpell(damage.instantSpellName) && damage.sharedHealingBase == 0) {
+			damage.sharedHealingBase = damage.primary.value;
 		}
-
-		if (damage.healingLink > 0) {
-			CombatDamage tmpDamage;
-			tmpDamage.primary.value = (damage.primary.value * damage.healingLink) / 100;
-			tmpDamage.primary.type = COMBAT_HEALING;
-			combatChangeHealth(attackerPlayer, attackerPlayer, tmpDamage);
+		damage.primary.value = DruidHealing::boost(damage.primary.value, int64_t(damage.healingMultiplier) * 100);
+		damage.sharedHealingBase = DruidHealing::boost(damage.sharedHealingBase, int64_t(damage.healingMultiplier) * 100);
+		if (attackerPlayer) {
+			const auto flat = attackerPlayer->wheel().getStat(WheelStat_t::HEALING);
+			damage.primary.value = DruidHealing::add(damage.primary.value, flat);
+			if (damage.sharedHealingBase > 0) damage.sharedHealingBase = DruidHealing::add(damage.sharedHealingBase, flat);
+			if (damage.secondary.value != 0) damage.secondary.value = DruidHealing::add(damage.secondary.value, flat);
 		}
-
-		if (attackerPlayer->wheel().getInstant("Blessing of the Grove")) {
-			damage.primary.value += (damage.primary.value * attackerPlayer->wheel().checkBlessingGroveHealingByTarget(target)) / 100.;
+	}
+	if (!attackerPlayer) return;
+	const bool spellHealing = !damage.instantSpellName.empty();
+	if (spellHealing && damage.healingKind == HealingKind::Primary) {
+		damage.primary.value = DruidHealing::boost(damage.primary.value, attackerPlayer->wheel().getBattleHealingPercent() * 100);
+	}
+	if (attackerPlayer == target && attackerPlayer->getDruidStance() == DruidStance::SharedConservation
+	    && (spellHealing || !damage.runeSpellName.empty())) {
+		damage.primary.value = DruidHealing::boost(damage.primary.value, 1000);
+	}
+	const auto grove = attackerPlayer->wheel().getStage(WheelStage_t::BLESSING_OF_THE_GROVE);
+	if (grove > 0 && spellHealing) {
+		damage.primary.value = DruidHealing::boost(damage.primary.value,
+			DruidHealing::groveBasisPoints(grove, target->getHealth(), target->getMaxHealth()));
+		const auto chance = static_cast<int32_t>(std::clamp<double>(
+			attackerPlayer->getSkillLevel(SKILL_CRITICAL_HIT_CHANCE) + attackerPlayer->getBaseCritical().chance * 10000.0 + damage.criticalChance, 0, 10000));
+		if (!damage.critical && chance > 0 && uniform_random(1, 10000) <= chance) {
+			const auto extra = static_cast<int32_t>(std::clamp<double>(
+				attackerPlayer->getSkillLevel(SKILL_CRITICAL_HIT_DAMAGE) + attackerPlayer->getBaseCritical().damage * 10000.0 + damage.criticalDamage, 0, INT32_MAX));
+			damage.primary.value = DruidHealing::boost(damage.primary.value, extra);
+			damage.critical = true;
 		}
+	}
+}
+
+void Game::applyDruidSecondaryHealing(const CombatDamage &damage, const std::shared_ptr<Player> &caster, const std::shared_ptr<Creature> &primary) {
+	if (!caster || caster->isRemoved() || caster->getHealth() <= 0 || damage.healingKind != HealingKind::Primary
+	    || !DruidHealing::isSharedSpell(damage.instantSpellName)) return;
+	const auto party = caster->getParty();
+	const auto eligible = [&](const std::shared_ptr<Player> &candidate) {
+		if (!party || !candidate || candidate == primary || candidate->getParty() != party || candidate->isRemoved()
+		    || candidate->getHealth() <= 0 || candidate->getHealth() >= candidate->getMaxHealth()) return false;
+		const auto from = caster->getPosition(), to = candidate->getPosition();
+		return from.z == to.z && Position::getDistanceX(from, to) <= 7 && Position::getDistanceY(from, to) <= 5
+			&& isSightClear(from, to, true);
+	};
+	std::shared_ptr<Player> secondary;
+	if (caster->getDruidStance() == DruidStance::SharedConservation && party) {
+		for (const auto &candidate : party->getPlayers()) {
+			if (!eligible(candidate)) continue;
+			if (!secondary || candidate->getHealth() < secondary->getHealth()
+			    || (candidate->getHealth() == secondary->getHealth() && (candidate->getGUID() < secondary->getGUID()
+			        || (candidate->getGUID() == secondary->getGUID() && candidate->getID() < secondary->getID())))) secondary = candidate;
+		}
+	}
+	if (secondary && eligible(secondary)) {
+		CombatDamage shared;
+		shared.primary.type = COMBAT_HEALING;
+		shared.primary.value = DruidHealing::fraction(damage.sharedHealingBase, 3000);
+		shared.origin = ORIGIN_SPELL;
+		shared.healingKind = HealingKind::SharedConservation;
+		shared.sharedHealingParty = party;
+		shared.criticalChance = damage.criticalChance;
+		shared.criticalDamage = damage.criticalDamage;
+		shared.instantSpellName = damage.instantSpellName;
+		CombatParams params;
+		params.aggressive = false;
+		params.combatType = COMBAT_HEALING;
+		params.origin = ORIGIN_SPELL;
+		params.impactEffect = CONST_ME_MAGIC_BLUE;
+		if (shared.primary.value > 0) Combat::doCombatHealth(caster, secondary, shared, params);
+	}
+	if (damage.healingLink > 0 && caster != primary && !caster->isRemoved() && caster->getHealth() > 0) {
+		CombatDamage linked;
+		linked.primary.type = COMBAT_HEALING;
+		linked.primary.value = DruidHealing::fraction(damage.primary.value, int64_t(damage.healingLink) * 100);
+		linked.origin = ORIGIN_SPELL;
+		linked.healingKind = HealingKind::HealingLink;
+		if (linked.primary.value > 0) combatChangeHealth(caster, caster, linked);
 	}
 }
 
@@ -8329,9 +8420,8 @@ int32_t Game::applyHealthChange(const CombatDamage &damage, const std::shared_pt
 
 	// Wheel of destiny (Gift of Life)
 	if (std::shared_ptr<Player> targetPlayer = target->getPlayer()) {
-		if (targetPlayer->wheel().getInstant("Gift of Life") && targetPlayer->wheel().getGiftOfCooldown() == 0 && (damage.primary.value + damage.secondary.value) >= targetHealth) {
-			int32_t overkillMultiplier = (damage.primary.value + damage.secondary.value) - targetHealth;
-			overkillMultiplier = (overkillMultiplier * 100) / targetPlayer->getMaxHealth();
+		if (targetPlayer->wheel().getInstant("Gift of Life") && targetPlayer->wheel().getGiftOfCooldown() == 0 && (int64_t(damage.primary.value) + damage.secondary.value) >= targetHealth && targetPlayer->getMaxHealth() > 0) {
+			const int64_t overkillMultiplier = ((int64_t(damage.primary.value) + damage.secondary.value - targetHealth) * 100) / targetPlayer->getMaxHealth();
 			if (overkillMultiplier <= targetPlayer->wheel().getGiftOfLifeValue()) {
 				targetPlayer->wheel().checkGiftOfLife();
 				targetHealth = target->getHealth();
@@ -8373,11 +8463,23 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 		}
 
 		// Wheel of destiny combat healing
+		// Revalidate after every combat/health callback, using the original party identity.
+		if (damage.healingKind == HealingKind::SharedConservation) {
+			const auto party = damage.sharedHealingParty.lock();
+			if (!attackerPlayer || !targetPlayer || !party || attackerPlayer->getParty() != party || targetPlayer->getParty() != party
+			    || attackerPlayer->isRemoved() || attackerPlayer->getHealth() <= 0 || targetPlayer->isRemoved()
+			    || attackerPlayer->getDruidStance() != DruidStance::SharedConservation) return false;
+			const auto from = attackerPlayer->getPosition(), to = targetPlayer->getPosition();
+			if (from.z != to.z || Position::getDistanceX(from, to) > 7 || Position::getDistanceY(from, to) > 5
+			    || !isSightClear(from, to, true)) return false;
+		}
 		applyWheelOfDestinyHealing(damage, attackerPlayer, target);
 
 		auto realHealthChange = target->getHealth();
 		target->gainHealth(attacker, damage.primary.value);
 		realHealthChange = target->getHealth() - realHealthChange;
+		applyDruidSecondaryHealing(damage, attackerPlayer, target);
+		if (damage.critical && realHealthChange > 0) addMagicEffect(targetPos, CONST_ME_CRITICAL_DAMAGE);
 
 		if (realHealthChange > 0 && !target->isInGhostMode()) {
 			if (targetPlayer) {
@@ -8475,8 +8577,8 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 		// Wheel of destiny apply combat effects
 		applyWheelOfDestinyEffectsToDamage(damage, attackerPlayer, target);
 
-		damage.primary.value = std::abs(damage.primary.value);
-		damage.secondary.value = std::abs(damage.secondary.value);
+		damage.primary.value = static_cast<int32_t>(std::min<int64_t>(INT32_MAX, std::abs(int64_t(damage.primary.value))));
+		damage.secondary.value = static_cast<int32_t>(std::min<int64_t>(INT32_MAX, std::abs(int64_t(damage.secondary.value))));
 
 		std::shared_ptr<Monster> targetMonster;
 		if (target && target->getMonster()) {
@@ -8539,7 +8641,32 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 			damage.primary.value *= target->getBuff(BUFF_DAMAGERECEIVED) / 100.;
 			damage.secondary.value *= target->getBuff(BUFF_DAMAGERECEIVED) / 100.;
 		}
-		auto healthChange = damage.primary.value + damage.secondary.value;
+		if (attackerPlayer && attackerPlayer->getKnightStance() != KnightStance::None) {
+			const auto percent = KnightStances::outgoingPercent(attackerPlayer->getKnightStance());
+			damage.primary.value = KnightStances::scaleDamage(damage.primary.value, percent);
+			damage.secondary.value = KnightStances::scaleDamage(damage.secondary.value, percent);
+		}
+		if (targetPlayer && targetPlayer->getKnightStance() != KnightStance::None) {
+			const auto percent = KnightStances::incomingPercent(targetPlayer->getKnightStance());
+			damage.primary.value = KnightStances::scaleDamage(damage.primary.value, percent);
+			damage.secondary.value = KnightStances::scaleDamage(damage.secondary.value, percent);
+		}
+		if (attackerPlayer) {
+			const auto percent = 100 + attackerPlayer->wheel().getCombatMasteryPercent(*target, false);
+			damage.primary.value = KnightWheel::scaleDamage(damage.primary.value, percent);
+			damage.secondary.value = KnightWheel::scaleDamage(damage.secondary.value, percent);
+		}
+		if (targetPlayer) {
+			const auto percent = 100 - targetPlayer->wheel().getCombatMasteryPercent(*target, true);
+			damage.primary.value = KnightWheel::scaleDamage(damage.primary.value, percent);
+			damage.secondary.value = KnightWheel::scaleDamage(damage.secondary.value, percent);
+		}
+		if (damage.attackReductionPercent != 0) {
+			const int remaining = 100 - std::min<int>(damage.attackReductionPercent, 100);
+			damage.primary.value = KnightStances::scaleDamage(damage.primary.value, remaining);
+			damage.secondary.value = KnightStances::scaleDamage(damage.secondary.value, remaining);
+		}
+		auto healthChange = DruidHealing::add(damage.primary.value, damage.secondary.value);
 		if (healthChange == 0) {
 			return true;
 		}
@@ -8590,38 +8717,30 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 		std::stringstream ss;
 
 		if (target->hasCondition(CONDITION_MANASHIELD) && damage.primary.type != COMBAT_UNDEFINEDDAMAGE) {
-			int32_t manaDamage = std::min<int32_t>(target->getMana(), healthChange);
-			uint32_t manaShield = target->getManaShield();
-			if (manaShield > 0) {
-				if (manaShield > manaDamage) {
-					target->setManaShield(manaShield - manaDamage);
-					manaShield = manaShield - manaDamage;
-				} else {
-					manaDamage = manaShield;
-					target->removeCondition(CONDITION_MANASHIELD);
-					manaShield = 0;
+			if (damage.origin != ORIGIN_NONE && target->getMana() > 0) {
+				for (const auto &event : target->getCreatureEvents(CREATURE_EVENT_MANACHANGE)) {
+					event->executeManaChange(target, attacker, damage);
 				}
 			}
+			// Ring equipment shields have a 2:1 mana cost. Spell shields remain 1:1.
+			const uint32_t manaPerHealth = target->getCondition(CONDITION_MANASHIELD, CONDITIONID_RING) ? 2 : 1;
+			healthChange = DruidHealing::add(damage.primary.value, damage.secondary.value);
+			const auto capacity = target->getManaShield();
+			int32_t absorbedDamage = target->hasCondition(CONDITION_MANASHIELD) && !target->isRemoved()
+				? static_cast<int32_t>(std::min<uint32_t>(target->getMana() / manaPerHealth, healthChange)) : 0;
+			if (capacity > 0) absorbedDamage = std::min<uint32_t>(absorbedDamage, capacity);
+			const uint32_t manaDamage = uint32_t(absorbedDamage) * manaPerHealth;
 			if (manaDamage != 0) {
-				if (damage.origin != ORIGIN_NONE) {
-					const auto events = target->getCreatureEvents(CREATURE_EVENT_MANACHANGE);
-					if (!events.empty()) {
-						for (const auto &creatureEvent : events) {
-							creatureEvent->executeManaChange(target, attacker, damage);
-						}
-						healthChange = damage.primary.value + damage.secondary.value;
-						if (healthChange == 0) {
-							return true;
-						}
-						manaDamage = std::min<int32_t>(target->getMana(), healthChange);
-					}
+				if (capacity > 0) {
+					if (uint32_t(absorbedDamage) >= capacity) target->removeCondition(CONDITION_MANASHIELD);
+					else target->setManaShield(capacity - absorbedDamage);
 				}
-
-				target->drainMana(attacker, manaDamage);
-
-				if (target->getMana() == 0 && manaShield > 0) {
-					target->removeCondition(CONDITION_MANASHIELD);
+				for (uint32_t remaining = manaDamage; remaining > 0;) {
+					const auto chunk = static_cast<int32_t>(std::min<uint32_t>(remaining, INT32_MAX));
+					target->drainMana(attacker, chunk);
+					remaining -= chunk;
 				}
+				if (target->getMana() == 0 && capacity > 0) target->removeCondition(CONDITION_MANASHIELD);
 
 				addMagicEffect(spectators.data(), targetPos, CONST_ME_LOSEENERGY);
 
@@ -8629,7 +8748,7 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 
 				std::string spectatorMessage;
 
-				message.primary.value = manaDamage;
+				message.primary.value = static_cast<int32_t>(std::min<uint32_t>(manaDamage, INT32_MAX));
 				message.primary.color = TEXTCOLOR_BLUE;
 
 				for (const auto &spectator : spectators) {
@@ -8680,7 +8799,7 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 					tmpPlayer->sendTextMessage(message);
 				}
 
-				damage.primary.value -= manaDamage;
+				damage.primary.value -= absorbedDamage;
 				if (damage.primary.value < 0) {
 					damage.secondary.value = std::max<int32_t>(0, damage.secondary.value + damage.primary.value);
 					damage.primary.value = 0;
@@ -8694,7 +8813,7 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 				}
 
 				if (targetPlayer) {
-					targetPlayer->updateImpactTracker(damage.primary.type, manaDamage);
+					targetPlayer->updateImpactTracker(damage.primary.type, static_cast<int32_t>(std::min<uint32_t>(manaDamage, INT32_MAX)));
 					if (damage.secondary.type != COMBAT_NONE) {
 						targetPlayer->updateImpactTracker(damage.secondary.type, damage.secondary.value);
 					}
@@ -8702,7 +8821,7 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 			}
 		}
 
-		auto realDamage = damage.primary.value + damage.secondary.value;
+		auto realDamage = DruidHealing::add(damage.primary.value, damage.secondary.value);
 		if (realDamage == 0) {
 			return true;
 		}
@@ -8713,7 +8832,13 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 		}
 
 		auto targetHealth = target->getHealth();
-		realDamage = std::min<int32_t>(targetHealth, damage.primary.value + damage.secondary.value);
+		const int64_t incomingDamage = int64_t(damage.primary.value) + damage.secondary.value;
+		if (targetPlayer && targetPlayer->applyManaBuffer(attacker, incomingDamage, static_cast<uint64_t>(OTSYS_TIME()))) {
+			const auto remainingHealthDamage = std::max(0, targetHealth - 1);
+			damage.primary.value = std::min(damage.primary.value, remainingHealthDamage);
+			damage.secondary.value = std::min(damage.secondary.value, remainingHealthDamage - damage.primary.value);
+		}
+		realDamage = static_cast<int32_t>(std::min<int64_t>(targetHealth, int64_t(damage.primary.value) + damage.secondary.value));
 		if (realDamage == 0) {
 			return true;
 		} else if (realDamage >= targetHealth) {
@@ -8732,6 +8857,7 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 			damage.secondary.value = std::min<int32_t>(damage.secondary.value, targetHealth - damage.primary.value);
 		}
 
+		realDamage = damage.primary.value + damage.secondary.value;
 		target->drainHealth(attacker, realDamage);
 		if (realDamage > 0 && targetMonster) {
 			if (targetMonster->israndomStepping()) {
@@ -8759,7 +8885,9 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 
 		if (attackerPlayer) {
 			if (!damage.extension && damage.origin != ORIGIN_CONDITION) {
-				applyCharmRune(targetMonster, attackerPlayer, target, realDamage);
+				if (!damage.suppressCharms) {
+					applyCharmRune(targetMonster, attackerPlayer, target, realDamage);
+				}
 				applyLifeLeech(attackerPlayer, targetMonster, target, damage, realDamage);
 				applyManaLeech(attackerPlayer, targetMonster, target, damage, realDamage);
 			}
@@ -9003,7 +9131,7 @@ void Game::applyManaLeech(
 	int64_t manaSkill = static_cast<int64_t>(attackerPlayer->getSkillLevel(SKILL_MANA_LEECH_AMOUNT)) + wheelLeechAmount + damage.manaLeech;
 
 	// Void charm rune
-	if (targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VOID) == targetMonster->getRaceId()) {
+	if (!damage.suppressCharms && targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VOID) == targetMonster->getRaceId()) {
 		if (const auto &charm = g_iobestiary().getBestiaryCharm(CHARM_VOID)) {
 			manaSkill += charm->chance[attackerPlayer->getCharmTier(CHARM_VOID)] * 100;
 		}
@@ -9033,7 +9161,7 @@ void Game::applyLifeLeech(
 	auto wheelLeechAmount = attackerPlayer->wheel().checkDrainBodyLeech(target, SKILL_LIFE_LEECH_AMOUNT);
 	int64_t lifeSkill = static_cast<int64_t>(attackerPlayer->getSkillLevel(SKILL_LIFE_LEECH_AMOUNT)) + wheelLeechAmount + damage.lifeLeech;
 
-	if (targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VAMP) == targetMonster->getRaceId()) {
+	if (!damage.suppressCharms && targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VAMP) == targetMonster->getRaceId()) {
 		if (const auto &charm = g_iobestiary().getBestiaryCharm(CHARM_VAMP)) {
 			lifeSkill += charm->chance[attackerPlayer->getCharmTier(CHARM_VAMP)] * 100;
 		}

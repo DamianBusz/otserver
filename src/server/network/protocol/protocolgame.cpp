@@ -107,10 +107,11 @@ namespace {
 	}
 
 	[[nodiscard]] bool supportsWeaponProficiencyDetailList(std::string_view versionString) {
-		// 15.25 builds are not byte-identical here. Unknown builds keep the
-		// shorter shape until a capture proves the trailing list is required.
+		// Build-specific readers are not byte-identical here. Keep unknown builds
+		// on the shorter shape until their reader or a capture proves the tail.
 		const bool known = hasClientBuildPrefix(versionString, "15.25.794c2e")
-			|| hasClientBuildPrefix(versionString, "15.25.d96c64");
+			|| hasClientBuildPrefix(versionString, "15.25.d96c64")
+			|| hasClientBuildPrefix(versionString, "15.33.8791c6");
 		if (!known && hasClientBuildPrefix(versionString, "15.25.")) {
 			g_logger().debug("[WeaponProficiency] unrecognized 15.25 build '{}'; detail list will not be sent.", versionString);
 		}
@@ -124,6 +125,7 @@ namespace {
 	 * The login build string gates the trailing list inside that packet because known
 	 * 15.25 builds are not byte-identical: earlier builds debug if the empty trailing
 	 * list count is sent, while captured later builds require that list boundary.
+	 * The 15.33.8791c6 byte reader also unconditionally consumes this count.
 	 */
 	[[nodiscard]] bool shouldSendWeaponProficiencyDetailList(const ProtocolProfile* profile, std::string_view versionString) {
 		return profile
@@ -434,7 +436,6 @@ namespace {
 			skillWheel = playerWheel.getStat(WheelStat_t::MANA_LEECH);
 		} else if (skill == SKILL_CRITICAL_HIT_DAMAGE) {
 			skillWheel = playerWheel.getStat(WheelStat_t::CRITICAL_DAMAGE);
-			skillWheel += playerWheel.getMajorStatConditional("Combat Mastery", WheelMajor_t::CRITICAL_DMG_2);
 			skillWheel += playerWheel.getMajorStatConditional("Ballistic Mastery", WheelMajor_t::CRITICAL_DMG);
 			skillWheel += playerWheel.checkAvatarSkill(WheelAvatarSkill_t::CRITICAL_DAMAGE);
 		}
@@ -5668,7 +5669,7 @@ void ProtocolGame::sendCyclopediaCharacterDefenceStats() {
 	msg.add<uint16_t>(player->getMantra());
 
 	const auto shieldingSkill = player->getSkillLevel(SKILL_SHIELD);
-	const uint16_t defenseWheel = player->wheel().getMajorStatConditional("Combat Mastery", WheelMajor_t::DEFENSE);
+	const uint16_t defenseWheel = 0; // Combat Mastery now changes damage, not shield defense.
 	msg.add<uint16_t>(player->getDefense(true));
 	msg.add<uint16_t>(player->getDefenseEquipment());
 	msg.addByte(0x06);
@@ -8262,6 +8263,22 @@ void ProtocolGame::sendRestingStatus(uint8_t protection) {
 }
 
 void ProtocolGame::sendMagicEffect(const Position &pos, uint16_t type, SourceEffect_t source) {
+	// Rebalance wave assets exist in the current client, but not legacy profiles.
+	if (version < 1525) {
+		if (type == CONST_ME_FORKED_GLACIER) type = CONST_ME_ICEATTACK;
+		if (type == CONST_ME_FORKED_THORNS) type = CONST_ME_PLANTATTACK;
+		if (type == CONST_ME_SHIELD_BASH) type = CONST_ME_HITAREA;
+		if (type == CONST_ME_DIVINE_BARRAGE) type = CONST_ME_HOLYAREA;
+		if (type == CONST_ME_ETHEREAL_BARRAGE) type = CONST_ME_HITAREA;
+		if (type == CONST_ME_LARGE_EXPLOSION_ENERGY) type = CONST_ME_ENERGYAREA;
+		if (type == CONST_ME_LARGE_EXPLOSION_DEATH || type == CONST_ME_THUNDERSTORM_DEATH) type = CONST_ME_MORTAREA;
+		if (type == CONST_ME_THUNDERSTORM_FIRE) type = CONST_ME_FIREAREA;
+		if (type == CONST_ME_FIRE_BLACK) type = CONST_ME_MORTAREA;
+		if (type == CONST_ME_FIRE_PURPLE) type = CONST_ME_ENERGYAREA;
+		if (type == CONST_ME_DEATH_ECHO) type = CONST_ME_MORTAREA;
+		if (type == CONST_ME_DEATH_ECHO_ENERGY) type = CONST_ME_ENERGYAREA;
+		if (type == CONST_ME_DEATH_ECHO_FIRE) type = CONST_ME_FIREATTACK;
+	}
 	const bool useLegacyU16Effect = oldProtocol && hasProtocolFeature(protocolProfile, ProtocolFeature::MagicEffectU16);
 	if (!canSee(pos) || (oldProtocol && !useLegacyU16Effect && type > 0xFF)) {
 		return;
@@ -10673,9 +10690,66 @@ void ProtocolGame::AddShopItem(NetworkMessage &msg, const ShopBlock &shopBlock) 
 void ProtocolGame::parseExtendedOpcode(NetworkMessage &msg) {
 	uint8_t opcode = msg.getByte();
 	const std::string &buffer = msg.getString();
+	if (opcode == PartyTracking::OPCODE) {
+		if (isPartyTrackingConnected()) {
+			partyTracking.handleRequest(buffer);
+		}
+		return;
+	}
 
+	// Versioned local OTClient shaping extension; official packet layouts stay unchanged.
+ if (opcode == 88 && !oldProtocol) {
+  if (buffer.size() > 4096) return;
+  const auto request = nlohmann::json::parse(buffer, nullptr, false);
+  if (!request.is_object()) return;
+  auto state = player->weaponProficiency().shapingRequest(request);
+  NetworkMessage response;
+  response.addByte(0x32);
+  response.addByte(88);
+  response.addString(state.dump());
+  writeToOutputBuffer(response);
+  return;
+ }
 	// process additional opcodes via lua script event
 	g_game().parsePlayerExtendedOpcode(player->getID(), opcode, buffer);
+}
+
+bool ProtocolGame::isPartyTrackingConnected() const {
+	const auto connection = getConnection();
+	return !m_isLivestreamViewer && acceptPackets && player && player->client.get() == this
+	    && !player->isRemoved() && connection && connection->isOpen();
+}
+
+void ProtocolGame::refreshPartyTracking() {
+	if (!partyTracking.needsRefresh() || !isPartyTrackingConnected()) {
+		return;
+	}
+
+	uint64_t revision = 0;
+	std::vector<PartyTracking::Member> members;
+	const auto party = player->getParty();
+	const auto partyPlayers = party ? party->getPlayers() : std::vector<std::shared_ptr<Player>> {};
+	if (party && std::ranges::find(partyPlayers, player) != partyPlayers.end() && !player->isDead() && player->getHealth() > 0) {
+		revision = player->getPartyMembershipRevision();
+		const auto leader = party->getLeader();
+		for (const auto &member : partyPlayers) {
+			// Revalidate both directions; invitees, detached sessions and dead players
+			// must not survive in a snapshot, even if a party callback vetoed removal.
+			if (member->getParty() != party || member->isDead() || member->getHealth() <= 0
+			    || !member->client || !member->client->isPartyTrackingConnected()) {
+				continue;
+			}
+			const auto &pos = member->getPosition();
+			members.push_back({ member->client->partyTracking.getMemberId(), member->getID(), member->getName(), pos.x, pos.y, pos.z, member == leader });
+		}
+	}
+	for (const auto &payload : partyTracking.refresh(revision, members)) {
+		NetworkMessage msg;
+		PartyTracking::writePacket(msg, payload);
+		// World-commit sweep only. Deliberately bypass the writer that mirrors
+		// gameplay packets to livestream viewers, who are not party recipients.
+		getOutputBuffer(msg.getLength())->append(msg);
+	}
 }
 
 // OTCv8
@@ -12326,6 +12400,24 @@ void ProtocolGame::sendWeaponProficiency(uint16_t weaponId) {
 	writeToOutputBuffer(msg);
 }
 
+void ProtocolGamePackets::writeWeaponProficiencyWindow(NetworkMessage &msg, uint16_t weaponId, uint32_t experience, std::span<const ProficiencyPerk> selectedPerks, const ProtocolProfile* profile, std::string_view clientBuild) {
+	msg.addByte(0xC4);
+	msg.add<uint16_t>(weaponId);
+	msg.add<uint32_t>(experience);
+
+	const auto perkCount = static_cast<uint8_t>(std::min<size_t>(selectedPerks.size(), std::numeric_limits<uint8_t>::max()));
+	msg.addByte(perkCount);
+	for (size_t i = 0; i < perkCount; ++i) {
+		const auto &perk = selectedPerks[i];
+		msg.addByte(perk.level);
+		msg.addByte(perk.index);
+	}
+
+	if (shouldSendWeaponProficiencyDetailList(profile, clientBuild)) {
+		msg.addByte(0x00);
+	}
+}
+
 void ProtocolGame::sendWeaponProficiencyWindow(uint16_t weaponId) {
 	if (!player || oldProtocol) {
 		return;
@@ -12336,24 +12428,7 @@ void ProtocolGame::sendWeaponProficiencyWindow(uint16_t weaponId) {
 	}
 
 	NetworkMessage msg;
-	msg.addByte(0xC4);
-
-	msg.add<uint16_t>(weaponId);
-	msg.add<uint32_t>(player->weaponProficiency().getExperience(weaponId));
-
-	const auto &selectedPerks = player->weaponProficiency().getSelectedPerks(weaponId);
-
-	const auto perkCount = static_cast<uint8_t>(std::min<size_t>(selectedPerks.size(), std::numeric_limits<uint8_t>::max()));
-	msg.addByte(perkCount);
-	for (size_t i = 0; i < perkCount; ++i) {
-		const auto &perk = selectedPerks[i];
-		msg.addByte(perk.level);
-		msg.addByte(perk.index);
-	}
-
-	if (shouldSendWeaponProficiencyDetailList(protocolProfile, clientVersionString)) {
-		msg.addByte(0x00);
-	}
+	ProtocolGamePackets::writeWeaponProficiencyWindow(msg, weaponId, player->weaponProficiency().getExperience(weaponId), player->weaponProficiency().getSelectedPerks(weaponId), protocolProfile, clientVersionString);
 
 	writeToOutputBuffer(msg);
 }

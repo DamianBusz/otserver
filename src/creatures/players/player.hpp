@@ -32,6 +32,11 @@
 #include "creatures/players/components/wheel/wheel_gems.hpp"
 #include "creatures/players/components/player_attached_effects.hpp"
 #include "creatures/players/components/weapon_proficiency.hpp"
+#include "creatures/players/components/elemental_stance.hpp"
+#include "creatures/players/components/paladin_stance.hpp"
+#include "creatures/players/components/druid_stance.hpp"
+#include "creatures/players/components/knight_stance.hpp"
+#include "creatures/players/components/mana_buffer.hpp"
 #include "utils/hash.hpp"
 
 class House;
@@ -204,6 +209,16 @@ public:
 	 * @return The virtue as Virtue_t.
 	 */
 	Virtue_t getVirtue() const;
+	void sendElementalStance() const;
+	PaladinStance getPaladinStance() const { return paladinStance; }
+	bool setPaladinStance(PaladinStance stance);
+	DruidStance getDruidStance() const { return druidStance; }
+	bool setDruidStance(DruidStance stance);
+	KnightStance getKnightStance() const { return knightStance; }
+	bool setKnightStance(KnightStance stance);
+	bool applyManaBuffer(const std::shared_ptr<Creature> &attacker, int64_t incomingDamage, uint64_t now);
+	uint64_t getDelayedSpellGeneration() const { return delayedSpellGeneration; }
+	ElementalStanceState &elementalStance() { return elementalStanceState; }
 
 	/**
 	 * @brief Sets the player's virtue.
@@ -411,6 +426,7 @@ public:
 
 	void setParty(std::shared_ptr<Party> newParty);
 	std::shared_ptr<Party> getParty() const;
+	uint64_t getPartyMembershipRevision() const { return partyMembershipRevision; }
 
 	int32_t getCleavePercent(bool useCharges = false) const;
 
@@ -848,6 +864,7 @@ public:
 	WeaponType_t getWeaponType() const;
 	int32_t getWeaponSkill(const std::shared_ptr<Item> &item) const;
 	void getShieldAndWeapon(std::shared_ptr<Item> &shield, std::shared_ptr<Item> &weapon) const;
+	std::optional<int32_t> getShieldSpellDefense() const;
 	/**
 	 * @brief Calculates a level-based flat damage or healing value.
 	 *
@@ -1702,6 +1719,12 @@ private:
 
 	uint8_t harmony = 0;
 	Virtue_t virtue = Virtue_t::None;
+	ElementalStanceState elementalStanceState;
+	PaladinStance paladinStance = PaladinStance::None;
+	DruidStance druidStance = DruidStance::None;
+	KnightStance knightStance = KnightStance::None;
+	ManaBufferState manaBuffer;
+	uint64_t delayedSpellGeneration = 0;
 	std::unordered_set<uint16_t> aimAtTargetSpellIds;
 
 	std::string name;
@@ -1765,6 +1788,7 @@ private:
 	std::shared_ptr<House> editHouse = nullptr;
 	std::shared_ptr<Npc> shopOwner = nullptr;
 	std::shared_ptr<Party> m_party = nullptr;
+	uint64_t partyMembershipRevision = 0;
 	std::shared_ptr<Player> tradePartner = nullptr;
 	std::shared_ptr<ProtocolGame> client = nullptr;
 	std::shared_ptr<Task> walkTask;
@@ -1942,6 +1966,7 @@ private:
 	friend class Actions;
 	friend class IOLoginData;
 	friend class ProtocolGame;
+	friend class PartyTrackingProtocolTest;
 	friend class MoveEvent;
 	friend class BedItem;
 	friend class PlayerWheel;

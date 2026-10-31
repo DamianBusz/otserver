@@ -81,6 +81,10 @@ public:
 	void resumeWork();
 
 	void send(const OutputMessage_ptr &outputMessage);
+	bool isOpen() {
+		std::scoped_lock lock(connectionLock);
+		return connectionState == CONNECTION_STATE_OPEN;
+	}
 
 	uint32_t getIP();
 	[[nodiscard]] uint16_t getLocalPort() const {

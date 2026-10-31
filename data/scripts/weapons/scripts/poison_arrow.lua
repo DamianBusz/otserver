@@ -1,4 +1,5 @@
 local combat = Combat()
+combat:setOrigin(ORIGIN_RANGED)
 combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
 combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_POISONARROW)
 combat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)

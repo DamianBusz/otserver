@@ -252,7 +252,7 @@ private:
 
 	WeaponAction_t action = WEAPONACTION_NONE;
 	CombatParams params;
-	WeaponType_t weaponType;
+	WeaponType_t weaponType = WEAPON_NONE;
 	std::map<uint16_t, bool> vocWeaponMap;
 	std::shared_ptr<Combat> m_combat;
 
