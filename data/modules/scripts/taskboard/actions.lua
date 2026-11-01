@@ -8,6 +8,8 @@ return function(api)
 		[api.action.upgradeTalisman] = true,
 		[api.action.deliverWeeklyItem] = true,
 		[api.action.chooseWeeklyDifficulty] = true,
+		[api.action.deliverDailyItem] = true,
+		[api.action.chooseDailyDifficulty] = true,
 	}
 
 	local u16Payload = {
@@ -23,7 +25,7 @@ return function(api)
 	}
 
 	local knownActions = {}
-	for action = api.action.openBounty, api.action.assignUnwanted do
+	for _, action in pairs(api.action) do
 		knownActions[action] = true
 	end
 
@@ -48,7 +50,15 @@ return function(api)
 		end
 
 		local payload = {}
-		if bytePayload[action] then
+		if action == api.action.claimDailyTask then
+			if msg:getUnreadBytes() < 9 then return nil, "missing daily claim identity", action end
+			payload[1], payload[2], payload[3] = msg:getByte(), msg:getU32(), msg:getU32()
+		elseif action == api.action.rerollBountyGold then
+			if msg:getUnreadBytes() < 4 then
+				return nil, "missing gold price", action
+			end
+			payload[1] = msg:getU32()
+		elseif bytePayload[action] then
 			payload[1] = readByte(msg)
 			if payload[1] == nil then
 				return nil, "missing byte payload", action
@@ -98,15 +108,44 @@ return function(api)
 			return
 		end
 
+		if action == api.action.enableBountyGold then
+			api.bountyGoldSessions[api.dailySessionKey(player)] = true
+			return
+		end
+
+		if action == api.action.enableRewardDetails then
+			api.rewardDetailSessions[api.dailySessionKey(player)] = true
+			return
+		end
+		if action == api.action.openDailyPoints then
+            api.dailyPointSessions[api.dailySessionKey(player)] = true
+        end
+        if action == api.action.openDailyRewards or action == api.action.openDailyPoints then
+            api.dailyRewardSessions[api.dailySessionKey(player)] = true
+        end
+        if action == api.action.openDailyKills or action == api.action.openDailyRewards or action == api.action.openDailyPoints then
+			api.dailyItemSessions[api.dailySessionKey(player)] = true
+		end
+
 		local state = api.state.ensure(player, false)
 		local changed = false
 		local responseWindow = api.window.bounty
-		if action == api.action.openWeekly then
+		if action == api.action.openDailyPoints or action == api.action.openDailyRewards or action == api.action.openDaily or action == api.action.openDailyKills or action == api.action.claimDailyTask or action == api.action.chooseDailyDifficulty or action == api.action.deliverDailyItem then
+			api.dailySessions[api.dailySessionKey(player)] = true
+			responseWindow = api.window.daily
+			if action == api.action.claimDailyTask and api.dailyItemSessions[api.dailySessionKey(player)] then
+				changed = api.daily.claim(player, state, payloadOrReason[1], payloadOrReason[2], payloadOrReason[3])
+			end
+		elseif action == api.action.openWeekly then
 			responseWindow = api.window.weekly
 		elseif action == api.action.openShop then
 			responseWindow = api.window.shop
 		elseif action == api.action.chooseBountyDifficulty then
 			changed = api.rules.chooseBountyDifficulty(player, state, payloadOrReason[1])
+		elseif action == api.action.rerollBountyGold then
+			if api.bountyGoldSessions[api.dailySessionKey(player)] then
+				changed = api.rules.rerollBounty(player, state, payloadOrReason[1])
+			end
 		elseif action == api.action.rerollBounty then
 			changed = api.rules.rerollBounty(player, state)
 		elseif action == api.action.claimDailyReroll then
@@ -138,7 +177,7 @@ return function(api)
 			changed = api.rules.assignPreference(state, payloadOrReason[1], payloadOrReason[2], false)
 		end
 
-		local shouldSyncIcons = changed or action == api.action.openBounty or action == api.action.openWeekly or action == api.action.openShop
+		local shouldSyncIcons = changed or action == api.action.openDailyPoints or action == api.action.openDailyRewards or action == api.action.openDailyKills or action == api.action.openDaily or action == api.action.openBounty or action == api.action.openWeekly or action == api.action.openShop
 		if shouldSyncIcons and api.rules.syncCreatureIcons(player, state) then
 			refreshIcons(player)
 		end

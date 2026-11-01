@@ -17,6 +17,12 @@ return function(api)
 		bounty = 0x00,
 		weekly = 0x01,
 		shop = 0x02,
+		daily = 0x03,
+		bountyGoldPrice = 0x04,
+		dailyKills = 0x05,
+		bountyRewards = 0x06,
+        dailyRewards = 0x07,
+        dailyPoints = 0x08,
 	}
 
 	api.action = {
@@ -37,6 +43,16 @@ return function(api)
 		clearUnwanted = 0x0E,
 		assignPreferred = 0x0F,
 		assignUnwanted = 0x10,
+		openDaily = 0x11,
+		deliverDailyItem = 0x12,
+		chooseDailyDifficulty = 0x13,
+		rerollBountyGold = 0x14,
+		enableBountyGold = 0x15,
+		claimDailyTask = 0x16,
+		openDailyKills = 0x17,
+		enableRewardDetails = 0x18,
+        openDailyRewards = 0x19,
+        openDailyPoints = 0x1A,
 	}
 
 	api.difficulty = {
@@ -133,6 +149,7 @@ return function(api)
 		preferenceSlots = 5,
 		bounty = {
 			slotCount = 3,
+            experienceMultiplier = 2,
 			maxDailyRerolls = 10,
 			rerollCooldownSeconds = 24 * 60 * 60,
 			goldTaskChance = 5,
@@ -155,7 +172,18 @@ return function(api)
 			damageActivationChance = 15,
 			lifeLeechActivationChance = 10,
 		},
+		daily = {
+			slots = 9,
+			experiencePercent = 40,
+            productDropPercent = 30,
+            minimumProductsPerTier = 3,
+            minimumProductChance = 1000,
+            maximumProductCount = 60,
+            potionChancePercent = 2,
+			dromePotions = { 36723, 36724, 36725, 36726, 36727, 36728 },
+		},
 		weekly = {
+			expansionUnlockedByDefault = true,
 			baseAnyCreatureKills = 1000,
 			killSlots = 5,
 			expandedKillSlots = 8,
@@ -164,19 +192,6 @@ return function(api)
 			killCompletionPoints = 25,
 			itemCompletionPoints = 75,
 			completionSeals = 1,
-		},
-		-- This is deliberately a small, local default catalog. Servers can extend
-		-- it without changing packet writers or purchase logic.
-		weeklyItems = {
-			{ id = 3031, min = 50, max = 250 },
-			{ id = 3582, min = 10, max = 40 },
-			{ id = 3577, min = 10, max = 40 },
-			{ id = 3592, min = 10, max = 40 },
-			{ id = 3601, min = 10, max = 40 },
-			{ id = 3578, min = 10, max = 40 },
-			{ id = 3600, min = 10, max = 40 },
-			{ id = 3586, min = 10, max = 40 },
-			{ id = 3583, min = 10, max = 40 },
 		},
 		-- Only item and wheel offers are enabled by default so a fresh server does
 		-- not promise mount/outfit ids that its own data pack may not contain.
@@ -392,6 +407,39 @@ return function(api)
 			return outfit.female
 		end
 		return outfit.male
+	end
+
+	-- A board view shares rewards/configuration without swapping the weekly state.
+	-- Only the board record and reset deadline differ; all rules remain shared.
+	function api.dailyView(state)
+		return setmetatable({
+			weekly = state.daily,
+			meta = { nextWeeklyReset = state.meta.nextDailyReset },
+			isDaily = true,
+		}, { __index = state })
+	end
+
+	function api.getBountyGoldRerollPrice(player)
+		local pricePerLevel = 200 -- same fallback as PREY_REROLL_PRICE_LEVEL
+		if configManager and configKeys and configKeys.PREY_REROLL_PRICE_LEVEL then
+			pricePerLevel = configManager.getNumber(configKeys.PREY_REROLL_PRICE_LEVEL)
+		end
+		return api.clampU32(player:getLevel() * math.max(0, api.toFiniteNumber(pricePerLevel, 200)))
+	end
+
+	function api.getDailyResetTimestamp(now)
+		return (math.floor(now / 86400) + 1) * 86400
+	end
+
+	-- Custom packets are sent only after an explicit Daily request this session.
+	api.dailySessions = {}
+	api.bountyGoldSessions = {}
+	api.dailyItemSessions = {}
+    api.dailyRewardSessions = {}
+    api.dailyPointSessions = {}
+	api.rewardDetailSessions = {}
+	function api.dailySessionKey(player)
+		return type(player.getId) == "function" and player:getId() or player
 	end
 
 	function api.getWeeklyResetTimestamp(now)

@@ -5,6 +5,9 @@ return function(api)
 	local function syncClient(player, state)
 		if api.wire and type(api.wire.sendWeekly) == "function" and api.supportsOfficialTaskboard(player) then
 			api.wire.sendWeekly(player, state)
+			if api.dailySessions[api.dailySessionKey(player)] then
+				api.wire.sendDaily(player, state)
+			end
 		elseif api.wire and type(api.wire.sendBalances) == "function" then
 			api.wire.sendBalances(player, state)
 		end
@@ -31,6 +34,7 @@ return function(api)
 
 		state.general.weeklyExpansionUnlocked = enabled
 		api.rules.ensureWeeklyAssignments(player, state)
+		api.daily.ensure(player, state)
 		if not api.state.save(player, state) then
 			state.general.weeklyExpansionUnlocked = previous
 			return false, previous, "state could not be saved"

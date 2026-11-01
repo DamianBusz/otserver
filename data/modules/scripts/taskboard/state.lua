@@ -32,7 +32,12 @@ return function(api)
 		end
 
 		local general = player:kv():scoped(api.config.stateScope):scoped("general")
-		return boolean(read(general, "weekly-expansion-unlocked", false))
+		-- Apply the free-slot default once, including old saved false values.
+		-- Subsequent explicit admin overrides remain persistent.
+		if api.config.weekly.expansionUnlockedByDefault and not boolean(read(general, "weekly-expansion-default-applied", false)) then
+			return true
+		end
+		return boolean(read(general, "weekly-expansion-unlocked", api.config.weekly.expansionUnlockedByDefault))
 	end
 
 	local function newPreferences()
@@ -88,11 +93,12 @@ return function(api)
 			meta = {
 				version = api.config.stateVersion,
 				nextWeeklyReset = 0,
+				nextDailyReset = 0,
 			},
 			general = {
 				bountyPoints = 0,
 				soulseals = 0,
-				weeklyExpansionUnlocked = false,
+				weeklyExpansionUnlocked = api.config.weekly.expansionUnlockedByDefault == true,
 				shopOutfits = {},
 			},
 			bounty = {
@@ -103,6 +109,7 @@ return function(api)
 				preferences = newPreferences(),
 			},
 			weekly = newWeekly(difficulty),
+			daily = newWeekly(difficulty),
 			upgrades = {
 				damage = 0,
 				lifeLeech = 0,
@@ -129,8 +136,18 @@ return function(api)
 			current = integer(read(taskScope, "current", 0), 0, 0xFFFF),
 			state = integer(read(taskScope, "state", api.taskState.notSelected), api.taskState.notSelected, api.taskState.completed),
 			marker = integer(read(taskScope, "marker", api.taskKind.normal), api.taskKind.normal, api.taskKind.gold),
+			rerolls = integer(read(taskScope, "rerolls", 0), 0, 4),
 		}
 	end
+
+	local function savedRerolls(task, fallbackDifficulty)
+        if (task.rerolls or 0) > 0 then return task.rerolls end
+        local multiplier = task.marker == api.taskKind.gold and 4 or (task.marker == api.taskKind.silver and 2 or 1)
+        for difficulty, settings in pairs(api.config.bounty.difficulties) do
+            if task.bountyPoints == settings.points * multiplier then return difficulty + 1 end
+        end
+        return fallbackDifficulty + 1
+    end
 
 	local function normalizeBounty(state, malformedTask)
 		local options = {}
@@ -158,6 +175,7 @@ return function(api)
 					required = required,
 					experience = integer(task.experience, 0, 0xFFFFFFFF),
 					bountyPoints = integer(task.bountyPoints, 0, 0xFF),
+					rerolls = savedRerolls(task, state.bounty.difficulty),
 					current = current,
 					state = taskState,
 					marker = integer(task.marker, api.taskKind.normal, api.taskKind.gold),
@@ -251,7 +269,7 @@ return function(api)
 		weekly.kills = normalizedKills
 
 		local validItemIds = {}
-		for _, item in ipairs(api.catalog.getWeeklyItems()) do
+		for _, item in ipairs(api.catalog.getWeeklyItems(weekly.difficulty)) do
 			local itemId = integer(item.id, 0, 0xFFFFFFFF)
 			if itemId > 0 then
 				validItemIds[itemId] = true
@@ -263,7 +281,7 @@ return function(api)
 		for _, item in ipairs(weekly.items) do
 			local itemId = integer(item.itemId, 0, 0xFFFFFFFF)
 			local required, current, completed = normalizeWeeklyProgress(item.required, item.current, item.completed)
-			if #normalizedItems < itemLimit and validItemIds[itemId] and required then
+			if #normalizedItems < itemLimit and (validItemIds[itemId] or (completed and itemId > 0 and ItemType(itemId):getId() == itemId)) and required then
 				table.insert(normalizedItems, {
 					index = #normalizedItems,
 					itemId = itemId,
@@ -304,6 +322,7 @@ return function(api)
 		local meta = root:scoped("meta")
 		state.meta.version = integer(read(meta, "version", state.meta.version), state.meta.version)
 		state.meta.nextWeeklyReset = integer(read(meta, "next-weekly-reset", 0), 0)
+		state.meta.nextDailyReset = integer(read(meta, "next-daily-reset", 0), 0)
 
 		local general = root:scoped("general")
 		state.general.bountyPoints = integer(read(general, "bounty-points", 0), 0, 0xFFFFFFFF)
@@ -344,48 +363,59 @@ return function(api)
 			}
 		end
 
-		local weekly = root:scoped("weekly")
-		state.weekly.difficulty = api.normalizeDifficulty(read(weekly, "difficulty", state.weekly.difficulty), state.weekly.difficulty)
-		state.weekly.selectionPending = boolean(read(weekly, "selection-pending", true))
-		state.weekly.killsCompleted = integer(read(weekly, "kills-completed", 0), 0, 0xFF)
-		state.weekly.itemsCompleted = integer(read(weekly, "items-completed", 0), 0, 0xFF)
-		state.weekly.points = integer(read(weekly, "points", 0), 0, 0xFFFFFFFF)
-		state.weekly.soulseals = integer(read(weekly, "soulseals", 0), 0, 0xFFFFFFFF)
-		state.weekly.killExperience = integer(read(weekly, "kill-experience", 0), 0, 0xFFFFFFFF)
-		state.weekly.itemExperience = integer(read(weekly, "item-experience", 0), 0, 0xFFFFFFFF)
+		for _, period in ipairs({ "weekly", "daily" }) do
+			local board = state[period]
+			local weekly = root:scoped(period)
+			board.difficulty = api.normalizeDifficulty(read(weekly, "difficulty", board.difficulty), board.difficulty)
+			board.selectionPending = boolean(read(weekly, "selection-pending", true))
+			board.policyVersion = integer(read(weekly, "policy-version", 0), 0)
+			board.revision = integer(read(weekly, "revision", 0), 0)
+			board.killsCompleted = integer(read(weekly, "kills-completed", 0), 0, 0xFF)
+			board.itemsCompleted = integer(read(weekly, "items-completed", 0), 0, 0xFF)
+			board.points = integer(read(weekly, "points", 0), 0, 0xFFFFFFFF)
+			board.soulseals = integer(read(weekly, "soulseals", 0), 0, 0xFFFFFFFF)
+			board.killExperience = integer(read(weekly, "kill-experience", 0), 0, 0xFFFFFFFF)
+			board.itemExperience = integer(read(weekly, "item-experience", 0), 0, 0xFFFFFFFF)
 
-		local anyCreature = weekly:scoped("any-creature")
-		state.weekly.anyCreature = {
-			required = integer(read(anyCreature, "required", 0), 0, 0xFFFF),
-			current = integer(read(anyCreature, "current", 0), 0, 0xFFFF),
-			completed = boolean(read(anyCreature, "completed", false)),
-		}
+			local anyCreature = weekly:scoped("any-creature")
+			board.anyCreature = {
+				required = integer(read(anyCreature, "required", 0), 0, 0xFFFF),
+				current = integer(read(anyCreature, "current", 0), 0, 0xFFFF),
+				completed = boolean(read(anyCreature, "completed", false)),
+			}
 
-		state.weekly.kills = {}
-		local killCount = integer(read(weekly, "kill-count", 0), 0, api.config.weekly.expandedKillSlots)
-		for index = 0, killCount - 1 do
-			local task = loadTask(weekly:scoped("kill-" .. index))
-			if task then
-				table.insert(state.weekly.kills, {
-					raceId = task.raceId,
-					required = task.required,
-					current = task.current,
-					completed = task.state == api.taskState.completed,
+			board.kills = {}
+			local killCount = integer(read(weekly, "kill-count", 0), 0, math.max(api.config.weekly.expandedKillSlots, api.config.daily.slots))
+			for index = 0, killCount - 1 do
+				local task = loadTask(weekly:scoped("kill-" .. index))
+				if task then
+					table.insert(board.kills, {
+						raceId = task.raceId,
+						required = task.required,
+						current = task.current,
+						completed = task.state == api.taskState.completed,
+						experience = task.experience,
+                        bountyPoints = task.bountyPoints,
+                        bonusPotionId = integer(read(weekly:scoped("kill-" .. index), "bonus-potion-id", 0), 0, 0xFFFF),
+                        rewardId = integer(read(weekly:scoped("kill-" .. index), "reward-id", 0), 0, 0xFFFF),
+						rewardCount = integer(read(weekly:scoped("kill-" .. index), "reward-count", 0), 0, 100),
+						claimed = boolean(read(weekly:scoped("kill-" .. index), "claimed", false)),
+					})
+				end
+			end
+
+			board.items = {}
+			local itemCount = integer(read(weekly, "item-count", 0), 0, api.config.weekly.expandedItemSlots)
+			for index = 0, itemCount - 1 do
+				local item = weekly:scoped("item-" .. index)
+				table.insert(board.items, {
+					index = index,
+					itemId = integer(read(item, "item-id", 0), 0, 0xFFFFFFFF),
+					required = integer(read(item, "required", 0), 0, 0xFFFFFFFF),
+					current = integer(read(item, "current", 0), 0, 0xFFFFFFFF),
+					completed = boolean(read(item, "completed", false)),
 				})
 			end
-		end
-
-		state.weekly.items = {}
-		local itemCount = integer(read(weekly, "item-count", 0), 0, api.config.weekly.expandedItemSlots)
-		for index = 0, itemCount - 1 do
-			local item = weekly:scoped("item-" .. index)
-			table.insert(state.weekly.items, {
-				index = index,
-				itemId = integer(read(item, "item-id", 0), 0, 0xFFFFFFFF),
-				required = integer(read(item, "required", 0), 0, 0xFFFFFFFF),
-				current = integer(read(item, "current", 0), 0, 0xFFFFFFFF),
-				completed = boolean(read(item, "completed", false)),
-			})
 		end
 
 		local upgrades = root:scoped("upgrades")
@@ -399,6 +429,9 @@ return function(api)
 		state.wheel.price = api.getWheelPrice(state.wheel.multiplier)
 		normalizeBounty(state, malformedBountyTask)
 		normalizeWeekly(state)
+		-- Preserve normalized legacy earnings once, then migrate to item claims.
+        if (state.daily.policyVersion or 0) < 2 then normalizeWeekly(api.dailyView(state)) end
+        -- Daily kill-only rewards are normalized by api.daily.ensure.
 		return state
 	end
 
@@ -410,6 +443,7 @@ return function(api)
 		taskScope:set("current", api.clampU16(task.current))
 		taskScope:set("state", api.clampByte(task.state))
 		taskScope:set("marker", api.clampByte(task.marker))
+		taskScope:set("rerolls", api.clampByte(task.rerolls or 0))
 	end
 
 	function stateApi.save(player, state)
@@ -421,11 +455,15 @@ return function(api)
 		local meta = root:scoped("meta")
 		meta:set("version", api.config.stateVersion)
 		meta:set("next-weekly-reset", integer(state.meta.nextWeeklyReset, 0))
+		meta:set("next-daily-reset", integer(state.meta.nextDailyReset, 0))
 
 		local general = root:scoped("general")
 		general:set("bounty-points", api.clampU32(state.general.bountyPoints))
 		general:set("soulseals", api.clampU32(state.general.soulseals))
 		general:set("weekly-expansion-unlocked", state.general.weeklyExpansionUnlocked == true)
+		if api.config.weekly.expansionUnlockedByDefault then
+			general:set("weekly-expansion-default-applied", true)
+		end
 		local shopOutfits = root:scoped("shop-outfits")
 		eachOutfitOffer(function(outfit)
 			local ownership = (state.general.shopOutfits or {})[outfit.key] or {}
@@ -451,38 +489,50 @@ return function(api)
 			preferenceScope:set("unwanted-race", api.clampU16(preference.unwantedRace))
 		end
 
-		local weekly = root:scoped("weekly")
-		weekly:set("difficulty", api.clampByte(state.weekly.difficulty))
-		weekly:set("selection-pending", state.weekly.selectionPending == true)
-		weekly:set("kills-completed", api.clampByte(state.weekly.killsCompleted))
-		weekly:set("items-completed", api.clampByte(state.weekly.itemsCompleted))
-		weekly:set("points", api.clampU32(state.weekly.points))
-		weekly:set("soulseals", api.clampU32(state.weekly.soulseals))
-		weekly:set("kill-experience", api.clampU32(state.weekly.killExperience))
-		weekly:set("item-experience", api.clampU32(state.weekly.itemExperience))
-		local anyCreature = weekly:scoped("any-creature")
-		anyCreature:set("required", api.clampU16(state.weekly.anyCreature.required))
-		anyCreature:set("current", api.clampU16(state.weekly.anyCreature.current))
-		anyCreature:set("completed", state.weekly.anyCreature.completed == true)
-		weekly:set("kill-count", #state.weekly.kills)
-		for index, task in ipairs(state.weekly.kills) do
-			saveTask(weekly:scoped("kill-" .. (index - 1)), {
-				raceId = task.raceId,
-				required = task.required,
-				experience = 0,
-				bountyPoints = 0,
-				current = task.current,
-				state = task.completed and api.taskState.completed or api.taskState.selected,
-				marker = api.taskKind.normal,
-			})
-		end
-		weekly:set("item-count", #state.weekly.items)
-		for index, item in ipairs(state.weekly.items) do
-			local itemScope = weekly:scoped("item-" .. (index - 1))
-			itemScope:set("item-id", api.clampU32(item.itemId))
-			itemScope:set("required", api.clampU32(item.required))
-			itemScope:set("current", api.clampU32(item.current))
-			itemScope:set("completed", item.completed == true)
+		for _, period in ipairs({ "weekly", "daily" }) do
+			local board = state[period]
+			local weekly = root:scoped(period)
+			weekly:set("difficulty", api.clampByte(board.difficulty))
+			weekly:set("selection-pending", board.selectionPending == true)
+			weekly:set("policy-version", board.policyVersion or 0)
+			weekly:set("revision", api.clampU32(board.revision or 0))
+			weekly:set("kills-completed", api.clampByte(board.killsCompleted))
+			weekly:set("items-completed", api.clampByte(board.itemsCompleted))
+			weekly:set("points", api.clampU32(board.points))
+			weekly:set("soulseals", api.clampU32(board.soulseals))
+			weekly:set("kill-experience", api.clampU32(board.killExperience))
+			weekly:set("item-experience", api.clampU32(board.itemExperience))
+			local anyCreature = weekly:scoped("any-creature")
+			anyCreature:set("required", api.clampU16(board.anyCreature.required))
+			anyCreature:set("current", api.clampU16(board.anyCreature.current))
+			anyCreature:set("completed", board.anyCreature.completed == true)
+			weekly:set("kill-count", #board.kills)
+			for index, task in ipairs(board.kills) do
+				saveTask(weekly:scoped("kill-" .. (index - 1)), {
+					raceId = task.raceId,
+					required = task.required,
+					experience = period == "daily" and (task.experience or 0) or 0,
+					bountyPoints = period == "daily" and (task.bountyPoints or 0) or 0,
+					current = task.current,
+					state = task.completed and api.taskState.completed or api.taskState.selected,
+					marker = api.taskKind.normal,
+				})
+			end
+			for index, task in ipairs(board.kills) do
+				local reward = weekly:scoped("kill-" .. (index - 1))
+				reward:set("bonus-potion-id", api.clampU16(task.bonusPotionId or 0))
+                reward:set("reward-id", api.clampU16(task.rewardId or 0))
+				reward:set("reward-count", api.clampU16(task.rewardCount or 0))
+				reward:set("claimed", task.claimed == true)
+			end
+			weekly:set("item-count", #board.items)
+			for index, item in ipairs(board.items) do
+				local itemScope = weekly:scoped("item-" .. (index - 1))
+				itemScope:set("item-id", api.clampU32(item.itemId))
+				itemScope:set("required", api.clampU32(item.required))
+				itemScope:set("current", api.clampU32(item.current))
+				itemScope:set("completed", item.completed == true)
+			end
 		end
 
 		local upgrades = root:scoped("upgrades")
@@ -520,9 +570,22 @@ return function(api)
 			state.meta.nextWeeklyReset = api.getWeeklyResetTimestamp(now)
 		end
 
+		if state.meta.nextDailyReset <= 0 then
+			state.meta.nextDailyReset = api.getDailyResetTimestamp(now)
+		elseif now >= state.meta.nextDailyReset then
+			if (state.daily.policyVersion or 0) < 2 and not state.daily.selectionPending and api.rules then
+				api.rules.finalizeWeekly(player, api.dailyView(state))
+			end
+			local revision = (state.daily.revision or 0) + 1
+			state.daily = newWeekly(state.daily.difficulty)
+			state.daily.revision = revision
+			state.meta.nextDailyReset = api.getDailyResetTimestamp(now)
+		end
+
 		if api.rules then
 			api.rules.ensureBounty(player, state)
 			api.rules.ensureWeekly(player, state)
+			api.daily.ensure(player, state)
 		end
 		if persist ~= false then
 			stateApi.save(player, state)

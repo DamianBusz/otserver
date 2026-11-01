@@ -4,12 +4,56 @@ The Task Board is implemented as a Lua module under `data/modules/scripts/taskbo
 
 The implementation intentionally derives behavior from the official packet contract without importing a server-specific catalog, generated monster pool, or source layout. Monster candidates are discovered from `Game.getMonsterTypes()` at runtime.
 
+## Bounty choices and Daily tasks
+
+Bounty offers three unique choices. Selected and completed assignments preserve progress. Completion grants 1/2/3/4 reroll tokens for Beginner/Adept/Expert/Master respectively (up to the existing ten-token balance limit). The reward tier is stored with the assignment, independently of the next selected Bounty difficulty. Bounty XP previews and claims double the stored base reward, then apply the character-sheet percentage: `(base + voucher + low-level + active store boost) / 100 * stamina multiplier`. Stored task XP remains the base amount, so bonuses are applied once at claim time.
+
+Daily and Weekly difficulty is automatic: Beginner at levels 1–29, Adept at 30–149, Expert at 150–399, Master at 400+. Client difficulty requests cannot override it. A tier change replaces unfinished assignments from the previous tier and preserves completed records and rewards. Weekly delivery items are exclusively creature products found in the actual loot of that tier's monsters. `creature_products.lua` is checked against the `primarytype` classification in `data/items/items.xml`; loot comes from the runtime monster catalog. Empty high-tier pools never fall back to easier monsters.
+
+Weekly includes its default unlocked third row, Any Creature task, deliveries, XP, and completion multiplier. Daily has nine specific-creature kill tasks, no deliveries, no Any Creature task, and no completion multiplier. Every task awards XP plus a creature product from that exact monster's loot. Base XP is 40% of the assigned monster's experience times required kills; previews and claims apply current character XP bonuses once. Eligible products have a base drop chance of at least 1%. Quantity is 30% of expected drops across the required kills (using the mean loot stack size), rounded down with minimums of 3/6/9/12 products by tier and a cap of 60. Daily tasks do not grant bounty points. There is no fallback to another monster's products. Daily candidates must have eligible loot; the current data pack has at least 87 eligible creatures in each tier.
+
+Every assignment independently has a 2% chance of one extra Drome potion, at all difficulty tiers. This bonus is stored when generated and never rerolled by reopening or reconnecting. The six potion IDs are 36723–36728. Product and bonus deliveries form an atomic batch: failed insertion rolls back every created item and awards no XP. Successful claims award XP once. Daily boards migrate via policy version 5; claimed records remain claimed. The increase preserves each current race, kill count, product identity and potion roll, doubling unclaimed XP from policy 4 and clearing the retired Daily bounty-point reward. Item quantities and rolls are preserved. Rewards are claimed to the normal inbox, and completed claims are persisted. Claim before the daily reset; unclaimed items expire. Legacy Daily points and Soulseals are settled once during migration.
+
+Daily progress is independent in `task-board/daily`. It resets at 00:00 UTC on fixed 86,400-second boundaries; login, actions and kills generate the new cycle lazily. The client refreshes at expiry. A persisted revision and reset timestamp prevent stale claims after regeneration, tier changes or reset.
+
+The item-only client opens Daily with action `0x17`, opting into server window `0x05`. Its payload is difficulty U8, reset U32, revision U32, count U8, followed by records: slot U8, race U16, required U16, current U16, reward item U16, quantity U16, claimed U8. Claim action `0x16` carries slot U8, expected reset U32 and revision U32. Old Daily action `0x11` retains window `0x03` and its original weekly-shaped packet. Old Daily delivery/difficulty actions are read but cannot change the kill-only board.
+
+The full reward client opens Daily with action `0x19`, opting into server window `0x07`. Its records use the `0x05` layout followed by effective XP U32 and bonus potion ID U16 (zero means none) for each task. Windows `0x03` and `0x05` remain unchanged for previously shipped readers. The same identity-checked `0x16` action claims the entire reward batch.
+
+The points-aware client opens with action `0x1A` and receives window `0x08`. It extends each `0x07` record with bounty points U16, now always zero; this field is retained for wire compatibility. Legacy windows remain byte-for-byte unchanged. Successful Daily claims also send the updated currency balances.
+
+Action `0x18` opts into Bounty reward window `0x06`: count U8, then slot U8 and reroll reward U8 per assignment. All extension opt-ins clear on login/logout. Existing packet layouts remain unchanged; optional formats are never inferred from client version.
+
+Bounty rerolls consume one token when available. With zero tokens, the custom
+client offers a separate gold confirmation. Gold uses the exact Prey setting:
+`player level * configManager.getNumber(configKeys.PREY_REROLL_PRICE_LEVEL)`
+(default 200 gold per level), with the normal inventory-and-bank debit.
+
+Action `0x15` opts the connection into gold-price replies; subsequent Bounty
+snapshots include a separate `0x5B` window `0x04` with one unsigned 32-bit gold
+price. Action `0x14` carries the confirmed unsigned 32-bit price. The server
+rejects changed prices, insufficient gold, available tokens, missing tasks, and
+unclaimed completed rewards without charging. The old token action `0x03` never
+silently falls back to gold. Prices are recomputed on every board response and
+payment, so level/config changes require a new confirmation. Login/logout clears
+the price opt-in; no legacy packet layout is extended.
+
+Validation covers three-choice migration, independent Daily/Weekly
+progress, replay and stale item claims, reconnects and reset, level-driven difficulty, XP bonuses and tiered rerolls,
+malformed actions, free-slot migration, gold/token payment isolation, scaled
+prices, insufficient funds, and the production packet writer. To export packets for the
+OTClient native parser regression, set `TASKBOARD_WIRE_FIXTURE_DIR` to an existing
+directory while running `tests/lua/test_taskboard_module.lua`; the client test is
+`tests/taskboard_protocol_smoke.cpp`. The client UI regression is
+`tests/lua/taskboard_native_ui.lua` (isolated runtime and user directory).
+
 ## Components
 
 - `taskboard.lua` loads the components and exposes the small global integration surface used by event callbacks.
 - `settings.lua` contains packet ids, action ids, limits, reward formulas, and local catalogs.
 - `catalog.lua` builds a race-id catalog from the server's loaded monster types.
 - `state.lua` reads and writes primitive values in the player's `task-board` KV scope. Arrays are represented by numbered KV scopes so the schema does not depend on table serialization.
+- `daily.lua` owns kill-only Daily generation, revision checks and item claims.
 - `rules.lua` implements bounty and weekly generation, kill progression, deliveries, rerolls, preferences, upgrades, shop purchases, and reward accounting.
 - `wire.lua` is the only component that writes Task Board and resource-balance packets.
 - `actions.lua` parses client actions and rejects incomplete or trailing payloads.
@@ -27,14 +71,16 @@ The parser treats the first byte after client packet 0x5F as an action:
 
 | Action | Payload |
 | --- | --- |
-| 0x00, 0x01, 0x03, 0x04, 0x06, 0x0A | none |
-| 0x02, 0x05, 0x07, 0x08, 0x09 | one byte |
+| 0x00, 0x01, 0x03, 0x04, 0x06, 0x0A, 0x11, 0x15, 0x17, 0x18, 0x19, 0x1A | none |
+| 0x02, 0x05, 0x07, 0x08, 0x09, 0x12, 0x13 | one byte |
 | 0x0B, 0x0C, 0x0D, 0x0E | one unsigned 16-bit value |
 | 0x0F, 0x10 | two unsigned 16-bit values |
+| 0x14 | one unsigned 32-bit confirmed gold price |
+| 0x16 | slot byte, reset U32, revision U32 |
 
 The parser consumes exactly the expected payload and ignores malformed packets without sending a response. This includes missing fields, unknown actions, and unexpected trailing bytes. The 0xBA selection packet contains exactly one unsigned 16-bit race id.
 
-The outbound 0x5B layout is split into three windows:
+The outbound 0x5B layout is split into four task windows plus an opt-in gold-price reply:
 
 - Bounty: task count and records, daily reroll counters, difficulty, four talisman upgrade lines, and five preference slots.
 - Weekly: any-creature progress, kill records, item records, difficulty and experience values, completion counters, selection state, next reset, third-slot state, and the current weekly task-hunting reward.
@@ -66,7 +112,7 @@ Preference probabilities apply only to Bounty generation. Each configured unwant
 
 Bounty points are stored by this module. Shop prices consume the existing task-hunting point API exposed by the server. Weekly completion points are awarded to that same task-hunting balance when the weekly cycle rolls over. Purchased Wheel points remain module-owned in `task-board/wheel/multiplier`; the Wheel reads that bounded value as zero to 50 extra points when calculating and serializing its available points. The next price is always derived from the multiplier instead of trusting an independent persisted value. The module never counts the store inbox as weekly delivery inventory.
 
-Task Board item rewards are delivered to the Store Inbox after its free slots are checked. Decoration offers create one unwrap kit per configured decoration id, including paired decorations. If any insertion in a reward batch fails, already inserted items are removed before the task-point debit is refunded.
+Task Board shop item rewards are delivered to the Store Inbox after its free slots are checked. Decoration offers create one unwrap kit per configured decoration id, including paired decorations. If any insertion in a reward batch fails, already inserted items are removed before the task-point debit is refunded.
 
 Shop offer prices must be finite, non-negative integers that fit the unsigned 32-bit wire field. Invalid prices are serialized as zero for packet stability, remain unavailable, and are never passed to the task-point debit or refund paths.
 

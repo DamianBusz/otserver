@@ -232,19 +232,21 @@ return function(api)
 		return preferred, unwanted
 	end
 
-	local function selectBountyEntries(state, difficulty, amount)
+	local function selectBountyEntries(state, difficulty, amount, excluded)
 		local preferred, unwanted = bountyPreferences(state)
 		local unwantedChance = percentage(api.config.bounty.unwantedRaceSkipChance)
 		local pool = api.catalog.getPool(difficulty)
 		local candidates = {}
 		for _, entry in ipairs(pool) do
-			if not unwanted[entry.raceId] or math.random(1, 100) > unwantedChance then
+			if not (excluded and excluded[entry.raceId]) and (not unwanted[entry.raceId] or math.random(1, 100) > unwantedChance) then
 				table.insert(candidates, entry)
 			end
 		end
 		if #candidates == 0 then
 			for _, entry in ipairs(pool) do
-				table.insert(candidates, entry)
+				if not (excluded and excluded[entry.raceId]) then
+					table.insert(candidates, entry)
+				end
 			end
 		end
 
@@ -314,12 +316,18 @@ return function(api)
 		return changed
 	end
 
-	function rules.generateBounty(player, state)
+	function rules.generateBounty(player, state, append)
 		local difficulty = api.normalizeDifficulty(state.bounty.difficulty, api.getDifficultyForLevel(playerLevel(player)))
 		state.bounty.difficulty = difficulty
 		local settings = difficultySettings(difficulty)
-		local selected = selectBountyEntries(state, difficulty, api.config.bounty.slotCount)
-		state.bounty.tasks = {}
+		if not append then
+			state.bounty.tasks = {}
+		end
+		local used = {}
+		for _, task in ipairs(state.bounty.tasks) do
+			used[task.raceId] = true
+		end
+		local selected = selectBountyEntries(state, difficulty, api.config.bounty.slotCount - #state.bounty.tasks, used)
 		for _, entry in ipairs(selected) do
 			local kind = randomTaskKind()
 			local multiplier = taskMultiplier(kind)
@@ -329,6 +337,7 @@ return function(api)
 				required = required,
 				experience = api.clampU32(math.floor(settings.experienceFactor * required) * multiplier),
 				bountyPoints = api.clampByte(settings.points * multiplier),
+				rerolls = difficulty + 1,
 				current = 0,
 				state = api.taskState.notSelected,
 				marker = kind,
@@ -338,10 +347,11 @@ return function(api)
 	end
 
 	function rules.ensureBounty(player, state)
-		if #state.bounty.tasks > 0 then
+		local first = state.bounty.tasks[1]
+		if #state.bounty.tasks >= api.config.bounty.slotCount or (first and first.state ~= api.taskState.notSelected) then
 			return false
 		end
-		return rules.generateBounty(player, state)
+		return rules.generateBounty(player, state, true)
 	end
 
 	local function weeklySlotCounts(state)
@@ -383,7 +393,7 @@ return function(api)
 
 	local function appendWeeklyItems(state, amount)
 		local itemPool = {}
-		for _, item in ipairs(api.catalog.getWeeklyItems()) do
+		for _, item in ipairs(api.catalog.getWeeklyItems(state.weekly.difficulty)) do
 			local itemId = api.toFiniteNumber(item.id)
 			local minimum = api.toFiniteNumber(item.min)
 			local maximum = api.toFiniteNumber(item.max)
@@ -501,11 +511,37 @@ return function(api)
 	end
 
 	function rules.ensureWeekly(player, state)
-		local changed = refreshWeeklyExperience(player, state)
-		if state.weekly.selectionPending then
-			return changed
+		local board = state.weekly
+		local difficulty = api.getDifficultyForLevel(playerLevel(player))
+		if board.selectionPending then
+			board.difficulty = difficulty
+			rules.generateWeekly(player, state, false)
+		elseif board.difficulty ~= difficulty or (board.policyVersion or 0) < 1 then
+			local allowed = {}
+			for _, entry in ipairs(api.catalog.getPool(difficulty)) do allowed[entry.raceId] = true end
+			local kills = {}
+			for _, task in ipairs(board.kills) do
+				if task.completed or (board.difficulty == difficulty and allowed[task.raceId]) then
+					table.insert(kills, task)
+				end
+			end
+			local allowedItems = {}
+			for _, item in ipairs(api.catalog.getWeeklyItems(difficulty)) do allowedItems[item.id] = true end
+			local items = {}
+			for _, task in ipairs(board.items) do
+				if task.completed or (board.difficulty == difficulty and allowedItems[task.itemId]) then
+					table.insert(items, task)
+				end
+			end
+			board.kills, board.items = kills, items
+			board.difficulty = difficulty
+			if not board.anyCreature.completed then
+				board.anyCreature.required = api.clampU16((difficulty + 1) * api.config.weekly.baseAnyCreatureKills)
+			end
 		end
-		return rules.ensureWeeklyAssignments(player, state) or changed
+		board.policyVersion = 1
+		refreshWeeklyExperience(player, state)
+		return rules.ensureWeeklyAssignments(player, state)
 	end
 
 	function rules.getWeeklyRewardMultiplier(state)
@@ -586,7 +622,9 @@ return function(api)
 					if completeWeeklyTask(player, state, task, state.weekly.killExperience) then
 						state.weekly.killsCompleted = (state.weekly.killsCompleted or 0) + 1
 						iconsChanged = true
-						api.wire.sendWeeklyTaskSpecificCreatureFinished(player, task.raceId)
+						if not state.isDaily then
+							api.wire.sendWeeklyTaskSpecificCreatureFinished(player, task.raceId)
+						end
 					end
 				end
 			end
@@ -630,10 +668,12 @@ return function(api)
 			changed = true
 		end
 
-		if not state.weekly.selectionPending then
-			for _, task in ipairs(state.weekly.kills) do
-				if not task.completed and task.current < task.required and player:setRaceIconOverlay(task.raceId, api.creatureIcon.weeklyTaskMonster) then
-					changed = true
+		for _, board in ipairs({ state.weekly, state.daily }) do
+			if not board.selectionPending then
+				for _, task in ipairs(board.kills) do
+					if not task.completed and task.current < task.required and player:setRaceIconOverlay(task.raceId, api.creatureIcon.weeklyTaskMonster) then
+						changed = true
+					end
 				end
 			end
 		end
@@ -669,8 +709,9 @@ return function(api)
 		end
 		local bountyChanged, bountyIconsChanged = rules.updateBountyOnKill(player, state, tonumber(raceId))
 		local weeklyChanged, weeklyIconsChanged = rules.updateWeeklyOnKill(player, state, tonumber(raceId))
+		local dailyChanged, dailyIconsChanged = api.daily.onKill(player, state, tonumber(raceId))
 		api.state.save(player, state)
-		if bountyIconsChanged or weeklyIconsChanged then
+		if bountyIconsChanged or weeklyIconsChanged or dailyIconsChanged then
 			local iconsChanged = rules.syncCreatureIcons(player, state)
 			if iconsChanged and type(player.refreshVisibleCreatureIcons) == "function" then
 				player:refreshVisibleCreatureIcons()
@@ -678,6 +719,9 @@ return function(api)
 		end
 		if bountyChanged and api.wire and api.supportsOfficialTaskboard(player) then
 			api.wire.sendBounty(player, state)
+		end
+		if dailyChanged and api.wire and api.dailySessions[api.dailySessionKey(player)] then
+			api.wire.sendDaily(player, state)
 		end
 		if weeklyChanged and api.wire and api.supportsOfficialTaskboard(player) then
 			api.wire.sendWeekly(player, state)
@@ -695,21 +739,38 @@ return function(api)
 		return true
 	end
 
+	function rules.getTaskExperience(player, baseExperience)
+		local function number(method, fallback)
+			if type(player[method]) ~= "function" then return fallback end
+			return math.max(0, api.toFiniteNumber(player[method](player), fallback))
+		end
+		-- Match the character sheet: additive XP percentages, then stamina.
+		local boost = number("getXpBoostTime", 0) > 0 and number("getXpBoostPercent", 0) or 0
+		local percent = number("getBaseXpGain", 100) + number("getVoucherXpBoost", 0) +
+			number("getFinalLowLevelBonus", number("getGrindingXpBoost", 0)) + boost
+		local stamina = number("getFinalBonusStamina", number("getStaminaXpBoost", 100) / 100)
+		return api.clampU32(math.floor((baseExperience or 0) * percent / 100 * stamina))
+	end
+
+    function rules.getBountyExperience(player, baseExperience)
+        return rules.getTaskExperience(player, (baseExperience or 0) * api.config.bounty.experienceMultiplier)
+    end
+
 	function rules.claimBounty(player, state)
 		local task = state.bounty.tasks[1]
 		if not task or task.state ~= api.taskState.completed then
 			return false
 		end
-		addExperience(player, state, task.experience)
+		addExperience(player, state, rules.getBountyExperience(player, task.experience))
 		state.general.bountyPoints = math.max(0, (state.general.bountyPoints or 0) + task.bountyPoints)
-		state.bounty.dailyRerolls = math.min(api.config.bounty.maxDailyRerolls, (state.bounty.dailyRerolls or 0) + 1)
+		state.bounty.dailyRerolls = math.min(api.config.bounty.maxDailyRerolls, (state.bounty.dailyRerolls or 0) + (task.rerolls or 1))
 		rules.generateBounty(player, state)
 		return true
 	end
 
-	function rules.rerollBounty(player, state)
+	function rules.rerollBounty(player, state, goldPrice)
 		local tasks = state.bounty.tasks or {}
-		if (state.bounty.dailyRerolls or 0) <= 0 or #tasks == 0 then
+		if #tasks == 0 or #api.catalog.getPool(state.bounty.difficulty) == 0 then
 			return false
 		end
 		for _, task in ipairs(tasks) do
@@ -717,7 +778,23 @@ return function(api)
 				return false
 			end
 		end
-		state.bounty.dailyRerolls = state.bounty.dailyRerolls - 1
+		if goldPrice ~= nil then
+			-- A gold reroll is explicit: never silently charge when a token
+			-- request becomes stale, or when the confirmed price has changed.
+			if (state.bounty.dailyRerolls or 0) > 0 or goldPrice ~= api.getBountyGoldRerollPrice(player) then
+				return false
+			end
+			if type(player.removeMoney) ~= "function" or not player:removeMoney(goldPrice, 0, true) then
+				if type(player.sendCancelMessage) == "function" then
+					player:sendCancelMessage("You do not have enough gold for a bounty reroll.")
+				end
+				return false
+			end
+		elseif (state.bounty.dailyRerolls or 0) > 0 then
+			state.bounty.dailyRerolls = state.bounty.dailyRerolls - 1
+		else
+			return false
+		end
 		rules.generateBounty(player, state)
 		return true
 	end
@@ -755,15 +832,9 @@ return function(api)
 	end
 
 	function rules.chooseWeeklyDifficulty(player, state, difficulty)
-		if not state.weekly.selectionPending then
-			return false
-		end
-		difficulty = api.normalizeDifficulty(difficulty, -1)
-		if difficulty < api.difficulty.beginner or difficulty > api.getDifficultyForLevel(playerLevel(player)) then
-			return false
-		end
-		state.weekly.difficulty = difficulty
-		return rules.generateWeekly(player, state, false)
+		-- The current character level owns this choice, including forged requests.
+		rules.ensureWeekly(player, state)
+		return false
 	end
 
 	local upgradeKeys = { "damage", "lifeLeech", "moreLoot", "doubleBestiary" }

@@ -55,6 +55,13 @@ local function makeReader(values, widths)
 		self.position = self.position + 1
 		return value
 	end
+	function reader:getU32()
+		table.insert(self.calls, "u32")
+		local value = self.values[self.position]
+		self.remaining = self.remaining - 4
+		self.position = self.position + 1
+		return value
+	end
 	function reader:getU16()
 		table.insert(self.calls, "u16")
 		local value = self.values[self.position]
@@ -115,6 +122,10 @@ MESSAGE_EVENT_ADVANCE = 18
 PLAYERSEX_FEMALE = 1
 CONST_SLOT_AMMO = 10
 
+local productIds = {396, 647, 903, 940, 941, 942, 944, 945, 946}
+ItemType = function(id)
+    return { getId = function() return id == 65000 and 0 or id end, getName = function() return "product " .. id end }
+end
 local function monster(name, raceId, stars)
 	return {
 		name = function()
@@ -123,6 +134,12 @@ local function monster(name, raceId, stars)
 		raceId = function()
 			return raceId
 		end,
+        experience = function() return stars * 100 end,
+		getLoot = function()
+            local loot = {{itemId = 3031, chance = 100000}, {itemId = 3446, chance = 1000}}
+            for _, id in ipairs(productIds) do table.insert(loot, {itemId = id, chance = 10000, minCount = 1, maxCount = 2}) end
+            return loot
+        end,
 		BestiaryStars = function()
 			return stars
 		end,
@@ -284,9 +301,11 @@ function player:isMonsterBestiaryUnlocked()
 end
 
 local api = {}
-for _, component in ipairs({ "settings", "diagnostics", "catalog", "state", "rules", "wire", "expansion", "admin", "actions", "soulpit", "lifecycle" }) do
+for _, component in ipairs({ "settings", "diagnostics", "catalog", "state", "rules", "daily", "wire", "expansion", "admin", "actions", "soulpit", "lifecycle" }) do
 	dofile("data/modules/scripts/taskboard/" .. component .. ".lua")(api)
 end
+local defaultExpansion = api.config.weekly.expansionUnlockedByDefault
+api.config.weekly.expansionUnlockedByDefault = false
 api.getLootBonus = api.rules.getLootBonus
 api.getDamageBonus = api.rules.getDamageBonus
 api.getLifeLeechBonus = api.rules.getLifeLeechBonus
@@ -1213,7 +1232,7 @@ test("weekly expansion fills both active assignment groups", function()
 	api.catalog.getPool = function()
 		local pool = {}
 		for raceId = 100, 107 do
-			table.insert(pool, { raceId = raceId })
+			table.insert(pool, api.catalog.get(raceId))
 		end
 		return pool
 	end
@@ -1351,7 +1370,7 @@ test("claiming the daily reroll replaces a selected bounty through client action
 		end
 		assert_equal(experience, player.experience)
 		assert_equal(points, state.general.bountyPoints)
-		assert_equal(nil, player.raceIconOverlays[oldRaceId])
+		assert_true(not player.raceIconOverlays[oldRaceId] or not player.raceIconOverlays[oldRaceId][api.creatureIcon.bountyTaskMonster])
 		assert_equal(refreshes + 1, player.iconRefreshes)
 		assert_equal(api.packet.serverTaskboard, sentMessages[1].events[1].value)
 		assert_equal(api.window.bounty, sentMessages[1].events[2].value)
@@ -1585,123 +1604,47 @@ test("weekly creature tasks are ordered by required kills", function()
 	assert_equal(100, state.weekly.kills[3].raceId)
 end)
 
-test("weekly delivery requirements use the configured item range", function()
-	local originalItems = api.config.weeklyItems
-	local originalKillSlots = api.config.weekly.killSlots
-	local originalItemSlots = api.config.weekly.itemSlots
-	local originalRandom = math.random
-	api.config.weeklyItems = { { id = 3031, min = 73, max = 73 } }
-	api.config.weekly.killSlots = 0
-	api.config.weekly.itemSlots = 1
-	math.random = function(minimum)
-		return minimum
-	end
-
-	local succeeded, failure = pcall(function()
-		for difficulty = api.difficulty.beginner, api.difficulty.master do
-			local state = api.state.load(player)
-			state.weekly.difficulty = difficulty
-			api.rules.generateWeekly(player, state, false)
-			assert_equal(1, #state.weekly.items)
-			assert_equal(73, state.weekly.items[1].required)
-		end
-	end)
-
-	api.config.weeklyItems = originalItems
-	api.config.weekly.killSlots = originalKillSlots
-	api.config.weekly.itemSlots = originalItemSlots
-	math.random = originalRandom
-	assert_true(succeeded, failure)
+test("weekly deliveries use the tier product quantity range", function()
+    for difficulty = 0, 3 do
+        local state = api.state.load(player)
+        state.weekly.difficulty = difficulty
+        api.rules.generateWeekly(player, state, false)
+        local settings = api.config.bounty.difficulties[difficulty]
+        for _, item in ipairs(state.weekly.items) do
+            assert_true(api.creatureProducts[item.itemId])
+            assert_true(item.required >= settings.weeklyItemMinimum and item.required <= settings.weeklyItemMaximum)
+        end
+    end
 end)
 
-test("default task board items use the current Canary ids", function()
-	local expectedItems = {
-		{ id = 3031, name = "gold coin" },
-		{ id = 3582, name = "ham" },
-		{ id = 3577, name = "meat" },
-		{ id = 3592, name = "grapes" },
-		{ id = 3601, name = "roll" },
-		{ id = 3578, name = "fish" },
-		{ id = 3600, name = "bread" },
-		{ id = 3586, name = "orange" },
-		{ id = 3583, name = "dragon ham" },
-	}
-	local itemFile = assert(io.open("data/items/items.xml", "r"))
-	local itemXml = itemFile:read("*a")
-	itemFile:close()
-	local function assertItemDefinition(itemId, expectedName)
-		local itemTag = itemXml:match('<item id="' .. itemId .. '"[^>]*>')
-		assert_true(itemTag ~= nil, "missing item definition for " .. itemId)
-		assert_true(itemTag:find('name="' .. expectedName .. '"', 1, true) ~= nil, "unexpected item name for " .. itemId)
-	end
 
-	assert_equal(#expectedItems, #api.config.weeklyItems)
-	for index, expected in ipairs(expectedItems) do
-		local configured = api.config.weeklyItems[index]
-		assert_equal(expected.id, configured.id)
-		assert_equal(nil, configured.name)
-		assertItemDefinition(expected.id, expected.name)
-	end
-	assertItemDefinition(api.config.talisman.itemId, "bounty talisman")
-	assertItemDefinition(api.config.shopOffers[1].id, api.config.shopOffers[1].name)
-
-	local state = api.state.load(player)
-	state.weekly.selectionPending = false
-	state.weekly.anyCreature = { required = 1, current = 0, completed = false }
-	state.weekly.kills = {}
-	state.weekly.items = { { itemId = expectedItems[1].id, required = 1, current = 0, completed = false } }
-	state.weekly.killsCompleted = 0
-	state.weekly.itemsCompleted = 0
-	state.weekly.points = 0
-	state.weekly.soulseals = 0
-	local sentBefore = #sentMessages
-	api.wire.sendWeekly(player, state)
-	local weeklyMessage = sentMessages[sentBefore + 1]
-	assert_equal("u32", weeklyMessage.events[8].operation)
-	assert_equal(expectedItems[1].id, weeklyMessage.events[8].value)
+test("generated product catalog exactly matches authoritative item definitions", function()
+    local file = assert(io.open("data/items/items.xml"))
+    local xml = file:read("*a")
+    file:close()
+    xml = xml:gsub("<item%s+[^>]-/>", "")
+    local expected = {}
+    for attributes, body in xml:gmatch("<item%s+([^>]+)>(.-)</item>") do
+        if body:find('key="primarytype" value="creature products"', 1, true) then
+            local id = tonumber(attributes:match('^id="(%d+)"'))
+            local first = tonumber(attributes:match('fromid="(%d+)"'))
+            local last = tonumber(attributes:match('toid="(%d+)"'))
+            if id then expected[id] = true elseif first and last then for i = first, last do expected[i] = true end end
+        end
+    end
+    for id in pairs(expected) do assert_true(api.creatureProducts[id], "missing product " .. id) end
+    for id in pairs(api.creatureProducts) do assert_true(expected[id], "non-product " .. id) end
+    for _, id in ipairs(api.config.daily.dromePotions) do assert_true(xml:find('<item id="' .. id .. '"', 1, true)) end
 end)
 
-test("weekly catalog ignores missing items and equipped ammunition", function()
-	local originalItems = api.config.weeklyItems
-	local originalItemType = rawget(_G, "ItemType")
-	local originalWeaponAmmo = rawget(_G, "WEAPON_AMMO")
-	api.config.weeklyItems = {
-		{ id = 3031, min = 1, max = 1 },
-		{ id = 3446, min = 1, max = 1 },
-		{ id = 65000, min = 1, max = 1 },
-	}
-	rawset(_G, "WEAPON_AMMO", 7)
-	rawset(
-		_G,
-		"ItemType",
-		setmetatable({}, {
-			__call = function(_, itemId)
-				return {
-					getId = function()
-						return itemId ~= 65000 and itemId or 0
-					end,
-					getName = function()
-						return itemId == 3031 and "gold coin" or itemId == 3446 and "arrow" or ""
-					end,
-					getWeaponType = function()
-						return itemId == 3446 and WEAPON_AMMO or 0
-					end,
-				}
-			end,
-		})
-	)
 
-	local succeeded, failure = pcall(function()
-		local items = api.catalog.getWeeklyItems()
-		assert_equal(1, #items)
-		assert_equal(3031, items[1].id)
-	end)
-
-	api.config.weeklyItems = originalItems
-	rawset(_G, "ItemType", originalItemType)
-	rawset(_G, "WEAPON_AMMO", originalWeaponAmmo)
-	assert_true(succeeded, failure)
+test("weekly catalog contains only valid creature products actually dropped by the tier", function()
+    local products = api.catalog.getWeeklyItems(1)
+    assert_equal(9, #products)
+    for _, item in ipairs(products) do assert_true(api.creatureProducts[item.id]) end
+    assert_equal(0, #api.catalog.getWeeklyItems(3), "missing hard monsters must not fall back to easy loot")
 end)
+
 
 test("weekly experience follows the level at task completion", function()
 	local level = 50
@@ -2933,7 +2876,7 @@ test("god helper recreates missing weekly delivery assignments with current ids"
 		assert_equal(1, saveCalls)
 		assert_equal(1, weeklyCalls)
 		for index = 1, api.config.weekly.itemSlots do
-			local configured = api.config.weeklyItems[index]
+			local configured = api.catalog.getWeeklyItems(state.weekly.difficulty)[index]
 			local generated = state.weekly.items[index]
 			assert_equal(configured.id, generated.itemId)
 			assert_equal(configured.min, generated.required)
@@ -2956,7 +2899,9 @@ test("god admin operations preserve state when persistence fails", function()
 	local originalSendBalances = api.wire.sendBalances
 	local originalTaskPoints = player.taskPoints
 	local state = {
+		meta = { nextDailyReset = 0 },
 		general = { weeklyExpansionUnlocked = false },
+		daily = { selectionPending = true, kills = {}, items = {} },
 		weekly = { selectionPending = true, kills = {}, items = {} },
 	}
 	local saveCalls = 0
@@ -2997,6 +2942,558 @@ test("god admin operations preserve state when persistence fails", function()
 	assert_true(succeeded, failure)
 end)
 
+test("three bounty choices preserve saved choices and active progress", function()
+    local before = storage
+    storage = {}
+    local ok, err = pcall(function()
+        local state = api.state.ensure(player)
+        assert_equal(3, #state.bounty.tasks)
+        state.bounty.tasks[4] = state.bounty.tasks[1]
+        api.state.save(player, state)
+        state = api.state.ensure(player)
+        assert_equal(3, #state.bounty.tasks)
+        assert_true(not api.rules.selectBounty(state, 3))
+        assert_true(api.rules.selectBounty(state, 2))
+        state.bounty.tasks[1].current = 7
+        api.state.save(player, state)
+        state = api.state.ensure(player)
+        assert_equal(1, #state.bounty.tasks)
+        assert_equal(7, state.bounty.tasks[1].current)
+    end)
+    storage = before
+    assert_true(ok, err)
+end)
+
+
+test("daily kills, item claims, reconnect and reset are independent of weekly", function()
+    local beforeStorage, beforeTime, beforeCreate, beforeInbox = storage, os.time, Game.createItem, player.getInbox
+    storage = {}
+    local now = math.floor(beforeTime({year = 2026, month = 11, day = 3, hour = 12}) / 86400) * 86400 + 60
+    os.time = function(date) if date then return beforeTime(date) end return now end
+    local delivered, removed, reject = 0, 0, false
+    INDEX_WHEREEVER, FLAG_NOLIMIT, RETURNVALUE_NOERROR = -1, 1, 0
+    Game.createItem = function(id, count) return {id = id, count = count, remove = function() removed = removed + 1 end} end
+    player.getInbox = function() return {addItemEx = function(_, item) if reject then return 1 end delivered = delivered + item.count return 0 end} end
+    local ok, err = pcall(function()
+        local state = api.state.ensure(player)
+        assert_true(not state.daily.selectionPending and not state.weekly.selectionPending)
+        assert_equal(86340, state.meta.nextDailyReset - now)
+        assert_equal(0, #state.daily.items)
+        local task = state.daily.kills[1]
+        task.required = 1
+        task.bonusPotionId = 0
+        api.state.save(player, state)
+        api.onMonsterKilled(player, task.raceId)
+        state = api.state.ensure(player)
+        task = state.daily.kills[1]
+        assert_true(task.completed)
+        assert_equal(0, state.daily.points)
+        assert_true(not api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision + 1))
+        reject = true
+        assert_true(not api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        assert_equal(1, removed)
+        reject = false
+        assert_true(api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        assert_equal(task.rewardCount, delivered)
+        api.state.save(player, state)
+        api.lifecycle.onLogin(player)
+        state = api.state.ensure(player)
+        assert_true(state.daily.kills[1].claimed)
+        assert_true(not api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        local reset, revision, weeklyReset = state.meta.nextDailyReset, state.daily.revision, state.meta.nextWeeklyReset
+        now = reset
+        state = api.state.ensure(player)
+        assert_true(#state.daily.kills > 0 and not state.daily.kills[1].claimed)
+        assert_true(state.daily.revision > revision)
+        assert_equal(weeklyReset, state.meta.nextWeeklyReset)
+        assert_true(not api.daily.claim(player, state, 0, reset, revision))
+        assert_equal(task.rewardCount, delivered)
+    end)
+    storage, os.time, Game.createItem, player.getInbox = beforeStorage, beforeTime, beforeCreate, beforeInbox
+    assert_true(ok, err)
+end)
+
+
+test("daily actions reject malformed packets and use a distinct window", function()
+	local beforeStorage = storage
+	storage = {}
+	local ok, err = pcall(function()
+		sentMessages = {}
+		api.actions.handle(player, makeReader({api.action.openDaily, 99}))
+		api.actions.handle(player, makeReader({api.action.chooseDailyDifficulty}))
+		api.actions.handle(player, makeReader({api.action.deliverDailyItem}))
+		assert_equal(0, #sentMessages)
+		api.actions.handle(player, makeReader({api.action.openDaily}))
+		assert_equal(0x5B, sentMessages[1].events[1].value)
+		assert_equal(3, sentMessages[1].events[2].value)
+		local snapshot = sentMessages[1].events
+		assert_equal("u32", snapshot[#snapshot].operation, "daily always has soulseals tail")
+		assert_equal(0, snapshot[#snapshot].value)
+		local state = api.state.load(player)
+		assert_equal(state.meta.nextDailyReset, snapshot[#snapshot - 3].value)
+		assert_true(api.dailySessions[api.dailySessionKey(player)])
+	end)
+	storage = beforeStorage
+	assert_true(ok, err)
+end)
+
+test("extra slots are free by default and migrate saved locked boards without losing progress", function()
+	assert_equal(true, defaultExpansion, "production default must unlock extra slots")
+	local beforeStorage, beforeDefault, beforePool = storage, api.config.weekly.expansionUnlockedByDefault, api.catalog.getPool
+	storage = {}
+	api.catalog.getPool = function()
+		local entries = {}
+		for race = 100, 107 do table.insert(entries, api.catalog.get(race)) end
+		return entries
+	end
+	local ok, err = pcall(function()
+		-- Prepare a character saved under the previous locked default.
+		api.config.weekly.expansionUnlockedByDefault = false
+		local state = api.state.ensure(player)
+		api.rules.chooseWeeklyDifficulty(player, state, 0)
+		api.daily.ensure(player, state)
+		state.weekly.anyCreature.current = 23
+		state.daily.kills[1].current = 17
+		api.state.save(player, state)
+		assert_equal(6, #state.weekly.items)
+		api.config.weekly.expansionUnlockedByDefault = true
+		assert_true(api.expansion.isUnlocked(player), "store recognizes migrated entitlement before save")
+		state = api.state.ensure(player)
+		assert_equal(8, #state.weekly.kills)
+		assert_equal(8, #state.daily.kills)
+		assert_equal(9, #state.weekly.items)
+		assert_equal(0, #state.daily.items)
+		assert_equal(23, state.weekly.anyCreature.current)
+		assert_equal(17, state.daily.kills[1].current)
+		assert_true(storage['root/task-board/general/weekly-expansion-unlocked'])
+		assert_true(storage['root/task-board/general/weekly-expansion-default-applied'])
+		assert_true(not api.expansion.unlock(player), "cannot charge for an already free expansion")
+		api.lifecycle.onLogin(player)
+		assert_true(api.state.load(player).general.weeklyExpansionUnlocked)
+		-- An intentional later admin override is not undone every login.
+		assert_true(api.expansion.setUnlocked(player, false))
+		assert_equal(false, api.state.load(player).general.weeklyExpansionUnlocked)
+		storage = {}
+		assert_true(api.state.ensure(player).general.weeklyExpansionUnlocked, "new character default")
+	end)
+	storage, api.config.weekly.expansionUnlockedByDefault, api.catalog.getPool = beforeStorage, beforeDefault, beforePool
+	assert_true(ok, err)
+end)
+
+test("gold rerolls scale like prey and use inventory plus bank only with an exact confirmed price", function()
+	local beforeStorage, beforeRemove, beforeConfig, beforeKeys = storage, player.removeMoney, configManager, configKeys
+	local beforeLevel = player.getLevel
+	local purse, bank, charges = 1000, 20000, 0
+	storage = {}
+	configKeys = {PREY_REROLL_PRICE_LEVEL = 1}
+	configManager = {getNumber = function(key) assert_equal(1, key); return 200 end}
+	player.removeMoney = function(_, amount, flags, useBank)
+		assert_equal(0, flags)
+		assert_equal(true, useBank)
+		if purse + bank < amount then return false end
+		local fromPurse = math.min(purse, amount)
+		purse, bank = purse - fromPurse, bank - (amount - fromPurse)
+		charges = charges + 1
+		return true
+	end
+	local ok, err = pcall(function()
+		local state = api.state.ensure(player)
+		assert_equal(10000, api.getBountyGoldRerollPrice(player))
+		player.getLevel = function() return 100 end
+		assert_equal(20000, api.getBountyGoldRerollPrice(player))
+		player.getLevel = beforeLevel
+		api.rules.selectBounty(state, 2)
+		state.bounty.tasks[1].current = 12
+		api.state.save(player, state)
+		-- Old token actions never silently spend gold, even with sufficient funds.
+		api.actions.handle(player, makeReader({api.action.rerollBounty}))
+		assert_equal(0, charges)
+		assert_equal(12, api.state.load(player).bounty.tasks[1].current)
+		api.actions.handle(player, makeReader({api.action.enableBountyGold}))
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 9999}, {1, 4}))
+		assert_equal(0, charges, "stale/malicious quote cannot charge")
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000}, {1, 4}))
+		assert_equal(1, charges)
+		assert_equal(0, purse)
+		assert_equal(11000, bank)
+		state = api.state.load(player)
+		assert_equal(0, state.bounty.dailyRerolls)
+		assert_equal(3, #state.bounty.tasks)
+		for _, task in ipairs(state.bounty.tasks) do
+			assert_equal(0, task.current)
+			assert_equal(api.taskState.notSelected, task.state)
+		end
+		-- Tokens are preferred; a stale gold dialog must not spend either currency.
+		state.bounty.dailyRerolls = 1
+		api.state.save(player, state)
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000}, {1, 4}))
+		assert_equal(1, charges)
+		assert_equal(1, api.state.load(player).bounty.dailyRerolls)
+		api.actions.handle(player, makeReader({api.action.rerollBounty}))
+		assert_equal(1, charges)
+		assert_equal(0, api.state.load(player).bounty.dailyRerolls)
+		-- Insufficient funds and completed rewards must preserve the assignment.
+		bank = 9999
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000}, {1, 4}))
+		assert_equal(1, charges)
+		state = api.state.load(player)
+		api.rules.selectBounty(state, 0)
+		state.bounty.tasks[1].current = state.bounty.tasks[1].required
+		state.bounty.tasks[1].state = api.taskState.completed
+		api.state.save(player, state)
+		bank = 20000
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000}, {1, 4}))
+		assert_equal(1, charges)
+		assert_equal(api.taskState.completed, api.state.load(player).bounty.tasks[1].state)
+		api.lifecycle.onLogin(player)
+		assert_true(not api.bountyGoldSessions[api.dailySessionKey(player)])
+	end)
+	storage, player.removeMoney, configManager, configKeys, player.getLevel = beforeStorage, beforeRemove, beforeConfig, beforeKeys, beforeLevel
+	assert_true(ok, err)
+end)
+
+test("gold price packets are opt-in and malformed payment actions cannot charge", function()
+	local beforeStorage = storage
+	storage = {}
+	local ok, err = pcall(function()
+		api.lifecycle.onLogin(player)
+		local state = api.state.ensure(player)
+		sentMessages = {}
+		api.wire.sendBounty(player, state)
+		for _, message in ipairs(sentMessages) do
+			assert_true(not (message.events[1].value == 0x5B and message.events[2].value == 4))
+		end
+		api.actions.handle(player, makeReader({api.action.enableBountyGold}))
+		sentMessages = {}
+		api.wire.sendBounty(player, state)
+		local price = sentMessages[#sentMessages].events
+		assert_equal(3, #price)
+		assert_equal(0x5B, price[1].value)
+		assert_equal(4, price[2].value)
+		assert_equal('u32', price[3].operation)
+		assert_equal(10000, price[3].value)
+		sentMessages = {}
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold}))
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000}, {1, 2}))
+		api.actions.handle(player, makeReader({api.action.rerollBountyGold, 10000, 99}, {1, 4, 1}))
+		assert_equal(0, #sentMessages)
+	end)
+	storage = beforeStorage
+	assert_true(ok, err)
+end)
+
+test("periodic tiers follow level and completed rewards survive a tier transition", function()
+    local beforeStorage, beforeLevel, beforeMonsters = storage, player.getLevel, Game.getMonsterTypes
+    storage = {}
+    local level = 1
+    player.getLevel = function() return level end
+    Game.getMonsterTypes = function()
+        local entries = {}
+        for tier = 2, 5 do for index = 1, 12 do
+            local race = tier * 100 + index
+            entries[race] = monster("Tier " .. tier .. " monster " .. index, race, tier)
+        end end
+        return entries
+    end
+    api.catalog.rebuild()
+    local ok, err = pcall(function()
+        for _, sample in ipairs({{1, 0}, {30, 1}, {150, 2}, {400, 3}, {900, 3}}) do
+            storage = {}
+            level = sample[1]
+            local state = api.state.ensure(player)
+            assert_equal(sample[2], state.weekly.difficulty)
+            assert_equal(sample[2], state.daily.difficulty)
+            assert_equal(9, #state.daily.kills)
+            assert_equal(0, #state.daily.items)
+            assert_true(not state.daily.selectionPending and not state.weekly.selectionPending)
+            api.actions.handle(player, makeReader({api.action.chooseWeeklyDifficulty, 0}))
+            api.actions.handle(player, makeReader({api.action.chooseDailyDifficulty, 0}))
+            state = api.state.ensure(player)
+            assert_equal(sample[2], state.weekly.difficulty)
+            assert_equal(sample[2], state.daily.difficulty)
+            for _, task in ipairs(state.daily.kills) do
+                local entry = api.catalog.get(task.raceId)
+                local settings = api.config.bounty.difficulties[sample[2]]
+                assert_true(entry.stars >= settings.minimumStars and entry.stars <= settings.maximumStars)
+                assert_true(api.creatureProducts[task.rewardId])
+                assert_true(task.rewardCount >= 1 and task.rewardCount <= 60)
+                assert_equal(math.floor(entry.monsterType:experience() * task.required * 0.4), task.experience)
+                assert_true(task.bonusPotionId == 0 or (task.bonusPotionId >= 36723 and task.bonusPotionId <= 36728))
+            end
+        end
+        storage, level = {}, 20
+        local state = api.state.ensure(player)
+        state.weekly.kills[1].current = state.weekly.kills[1].required
+        state.weekly.kills[1].completed = true
+        state.daily.kills[1].current = state.daily.kills[1].required
+        state.daily.kills[1].completed = true
+        local completedRace, reward = state.daily.kills[1].raceId, state.daily.kills[1].rewardId
+        local revision = state.daily.revision
+        api.state.save(player, state)
+        level = 900
+        state = api.state.ensure(player)
+        assert_equal(3, state.weekly.difficulty)
+        assert_equal(3, state.daily.difficulty)
+        assert_true(state.daily.revision > revision)
+        assert_equal(completedRace, state.daily.kills[1].raceId)
+        assert_equal(reward, state.daily.kills[1].rewardId)
+        assert_true(state.daily.kills[1].completed)
+        for _, task in ipairs(state.daily.kills) do
+            if not task.completed then assert_true(api.catalog.get(task.raceId).stars >= 4) end
+        end
+        for _, task in ipairs(state.weekly.kills) do
+            if not task.completed then assert_true(api.catalog.get(task.raceId).stars >= 4) end
+        end
+    end)
+    storage, player.getLevel, Game.getMonsterTypes = beforeStorage, beforeLevel, beforeMonsters
+    api.catalog.rebuild()
+    assert_true(ok, err)
+end)
+
+test("bounty XP uses the character percentage once and reroll rewards stay with the assignment", function()
+    local beforeStorage, beforePool = storage, api.catalog.getPool
+    storage = {}
+    api.catalog.getPool = function() return {api.catalog.get(101), api.catalog.get(102), api.catalog.get(104)} end
+    local values = {getBaseXpGain = 100, getVoucherXpBoost = 0, getGrindingXpBoost = 0, getXpBoostTime = 1, getXpBoostPercent = 50, getStaminaXpBoost = 150}
+    local saved = {}
+    for method in pairs(values) do
+        saved[method] = player[method]
+        local key = method
+        player[method] = function() return values[key] end
+    end
+    local ok, err = pcall(function()
+        assert_equal(2250, api.rules.getTaskExperience(player, 1000))
+        assert_equal(4500, api.rules.getBountyExperience(player, 1000), "Bounty rewards double before character bonuses")
+        values.getXpBoostTime = 0
+        assert_equal(1500, api.rules.getTaskExperience(player, 1000), "expired store boost excluded")
+        values.getStaminaXpBoost = 50
+        assert_equal(500, api.rules.getTaskExperience(player, 1000))
+        values.getVoucherXpBoost, values.getGrindingXpBoost, values.getBaseXpGain = 10, 20, 200
+        assert_equal(1150, api.rules.getTaskExperience(player, 1000))
+        values.getBaseXpGain, values.getVoucherXpBoost, values.getGrindingXpBoost, values.getStaminaXpBoost = 100, 0, 0, 100
+        for difficulty = 0, 3 do
+            local state = api.state.ensure(player)
+            state.bounty.difficulty = difficulty
+            api.rules.generateBounty(player, state)
+            assert_equal(3, #state.bounty.tasks)
+            assert_equal(difficulty + 1, state.bounty.tasks[1].rerolls)
+            api.rules.selectBounty(state, 0)
+            state.bounty.difficulty = (difficulty + 1) % 4
+            state.bounty.tasks[1].state = api.taskState.completed
+            state.bounty.tasks[1].current = state.bounty.tasks[1].required
+            state.bounty.dailyRerolls = 0
+            api.state.save(player, state)
+            state = api.state.load(player)
+            assert_equal(difficulty + 1, state.bounty.tasks[1].rerolls, "saved task reward independent of next selection")
+            local xp, before = state.bounty.tasks[1].experience, player.experience
+            assert_true(api.rules.claimBounty(player, state))
+            assert_equal(xp * 2, player.experience - before)
+            assert_equal(difficulty + 1, state.bounty.dailyRerolls)
+            assert_true(not api.rules.claimBounty(player, state), "cannot duplicate completed reward")
+        end
+    end)
+    for method in pairs(values) do player[method] = saved[method] end
+    storage, api.catalog.getPool = beforeStorage, beforePool
+    assert_true(ok, err)
+end)
+
+test("new reward packets require session opt-in and daily claims consume exact identity widths", function()
+    local beforeStorage = storage
+    storage = {}
+    local ok, err = pcall(function()
+        api.lifecycle.onLogin(player)
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.openBounty}))
+        for _, msg in ipairs(sentMessages) do assert_true(msg.events[2].value ~= api.window.bountyRewards) end
+        api.actions.handle(player, makeReader({api.action.enableRewardDetails}))
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.openBounty}))
+        local found = false
+        for _, msg in ipairs(sentMessages) do
+            if msg.events[1].value == api.packet.serverTaskboard and msg.events[2].value == api.window.bountyRewards then
+                found = true
+                assert_equal(3, msg.events[3].value)
+                assert_equal(2, msg.events[5].value)
+            end
+        end
+        assert_true(found)
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.openDailyKills}))
+        assert_equal(api.window.dailyKills, sentMessages[1].events[2].value)
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.openDailyRewards}))
+        assert_equal(api.window.dailyRewards, sentMessages[1].events[2].value)
+        assert_true(api.dailyRewardSessions[api.dailySessionKey(player)])
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.openDailyPoints}))
+        assert_equal(api.window.dailyPoints, sentMessages[1].events[2].value)
+        assert_true(api.dailyPointSessions[api.dailySessionKey(player)])
+        sentMessages = {}
+        api.actions.handle(player, makeReader({api.action.claimDailyTask, 0, 123}, {1, 1, 4}))
+        assert_equal(0, #sentMessages, "truncated claim rejected")
+        local reader = makeReader({api.action.claimDailyTask, 0, 123, 456}, {1, 1, 4, 4})
+        api.actions.handle(player, reader)
+        assert_equal(0, reader:getUnreadBytes())
+        assert_equal('u32', reader.calls[3])
+        assert_equal('u32', reader.calls[4])
+        api.lifecycle.onLogin(player)
+        assert_true(not api.dailyItemSessions[api.dailySessionKey(player)])
+        assert_true(not api.rewardDetailSessions[api.dailySessionKey(player)])
+        assert_true(not api.dailyRewardSessions[api.dailySessionKey(player)])
+        assert_true(not api.dailyPointSessions[api.dailySessionKey(player)])
+    end)
+    storage = beforeStorage
+    assert_true(ok, err)
+end)
+
+test("Daily products follow their monster loot and drop rates; rare potions can accompany any tier", function()
+    local oldStorage, oldLevel, oldMonsters, oldRandom = storage, player.getLevel, Game.getMonsterTypes, math.random
+    local level = 1
+    player.getLevel = function() return level end
+    local expectedProducts = {}
+    Game.getMonsterTypes = function()
+        local entries = {}
+        for stars = 2, 5 do for index = 1, 12 do
+            local race, product = stars * 100 + index, productIds[(index - 1) % #productIds + 1]
+            local value = monster('Reward monster ' .. race, race, stars)
+            value.getLoot = function() return {{itemId = product, chance = 50000, minCount = 1, maxCount = 3}} end
+            entries[race], expectedProducts[race] = value, product
+        end end
+        return entries
+    end
+    api.catalog.rebuild()
+    local ranges = {}
+    for tier, settings in pairs(api.config.bounty.difficulties) do
+        ranges[tier] = {settings.weeklyKillMinimum, settings.weeklyKillMaximum}
+        settings.weeklyKillMinimum, settings.weeklyKillMaximum = 100, 100
+    end
+    local potionRoll = 201
+    math.random = function(minimum, maximum) return maximum == 10000 and potionRoll or minimum end
+    local ok, err = pcall(function()
+        for _, newLevel in ipairs({1, 50, 150, 900}) do
+            for _, roll in ipairs({201, 200}) do
+                storage, level, potionRoll = {}, newLevel, roll
+                local state = api.state.ensure(player)
+                assert_equal(9, #state.daily.kills)
+                for _, task in ipairs(state.daily.kills) do
+                    assert_equal(expectedProducts[task.raceId], task.rewardId, 'Product must be in this exact monster loot')
+                    assert_equal(30, task.rewardCount, 'Thirty percent of expected 100 drops')
+                    assert_equal(api.catalog.get(task.raceId).monsterType:experience() * 40, task.experience)
+                    assert_equal(roll == 200 and 36723 or 0, task.bonusPotionId, 'Two-percent boundary applies at every tier')
+                end
+                local revision, potion = state.daily.revision, state.daily.kills[1].bonusPotionId
+                potionRoll = 10000
+                state = api.state.ensure(player)
+                assert_equal(revision, state.daily.revision)
+                assert_equal(potion, state.daily.kills[1].bonusPotionId, 'Reopening never rerolls rare rewards')
+            end
+        end
+        local state = api.state.ensure(player)
+        state.daily.policyVersion = 2
+        state.daily.kills[1].rewardId = 3031
+        state.daily.kills[2].claimed = true
+        state.daily.kills[2].completed = true
+        state.daily.kills[2].current = 100
+        api.state.save(player, state)
+        state = api.state.ensure(player)
+        assert_equal(5, state.daily.policyVersion)
+        assert_equal(expectedProducts[state.daily.kills[1].raceId], state.daily.kills[1].rewardId)
+        assert_true(state.daily.kills[2].claimed, 'Migrated claimed rewards cannot be claimed again')
+    end)
+    for tier, range in pairs(ranges) do
+        api.config.bounty.difficulties[tier].weeklyKillMinimum, api.config.bounty.difficulties[tier].weeklyKillMaximum = range[1], range[2]
+    end
+    storage, player.getLevel, Game.getMonsterTypes, math.random = oldStorage, oldLevel, oldMonsters, oldRandom
+    api.catalog.rebuild()
+    assert_true(ok, err)
+end)
+
+test("Daily XP and both items claim once; failed bonus insertion rolls back the product", function()
+    local oldStorage, oldCreate, oldInbox, oldXp, oldBase = storage, Game.createItem, player.getInbox, player.experience, player.getBaseXpGain
+    storage = {}
+    player.getBaseXpGain = function() return 200 end
+    local inventory, removed, additions, failBonus = 0, 0, 0, true
+    Game.createItem = function(id, count)
+        local item = {id = id, count = count, inserted = false}
+        function item:remove()
+            if self.inserted then inventory = inventory - self.count end
+            self.inserted = false
+            removed = removed + 1
+        end
+        return item
+    end
+    player.getInbox = function() return {addItemEx = function(_, item)
+        additions = additions + 1
+        if failBonus and additions == 2 then return 1 end
+        inventory = inventory + item.count
+        item.inserted = true
+        return RETURNVALUE_NOERROR
+    end} end
+    local ok, err = pcall(function()
+        local state = api.state.ensure(player)
+        local task = state.daily.kills[1]
+        local beforePoints = state.general.bountyPoints
+        task.bountyPoints = 12 -- Even a stale record must never grant points.
+        task.completed, task.current, task.bonusPotionId, task.experience = true, task.required, 36723, 5000
+        assert_true(not api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        assert_equal(0, inventory)
+        assert_equal(beforePoints, state.general.bountyPoints, 'No points on failed item delivery')
+        assert_equal(2, removed)
+        assert_equal(oldXp, player.experience)
+        assert_true(not task.claimed)
+        failBonus, additions = false, 0
+        assert_true(api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        assert_equal(task.rewardCount + 1, inventory)
+        assert_equal(oldXp + 10000, player.experience, 'Character XP bonus applies once')
+        assert_equal(beforePoints, state.general.bountyPoints, 'Daily claims never grant bounty points')
+        api.state.save(player, state)
+        state = api.state.ensure(player)
+        assert_equal(5000, state.daily.kills[1].experience, 'Persist base XP, not boosted payout')
+        assert_equal(0, state.daily.kills[1].bountyPoints)
+        assert_equal(36723, state.daily.kills[1].bonusPotionId)
+        assert_true(not api.daily.claim(player, state, 0, state.meta.nextDailyReset, state.daily.revision))
+        assert_equal(oldXp + 10000, player.experience)
+    end)
+    storage, Game.createItem, player.getInbox, player.experience, player.getBaseXpGain = oldStorage, oldCreate, oldInbox, oldXp, oldBase
+    assert_true(ok, err)
+end)
+
+test("reward increase preserves saved hunts and rolls and applies exactly once", function()
+    local beforeStorage = storage
+    storage = {}
+    local ok, err = pcall(function()
+        local state = api.state.ensure(player)
+        local task = state.daily.kills[1]
+        local race, product, required = task.raceId, task.rewardId, task.required
+        task.current = 7
+        task.bonusPotionId = 36723
+        task.rewardCount = 6
+        task.experience = math.floor(api.catalog.get(race).monsterType:experience() * required / 5)
+        local oldXp = task.experience
+        task.bountyPoints = 4
+        state.daily.policyVersion = 4
+        local oldRevision = state.daily.revision
+        api.state.save(player, state)
+        state = api.state.ensure(player)
+        task = state.daily.kills[1]
+        assert_equal(race, task.raceId)
+        assert_equal(product, task.rewardId)
+        assert_equal(7, task.current)
+        assert_equal(36723, task.bonusPotionId)
+        assert_equal(oldXp * 2, task.experience)
+        assert_equal(6, task.rewardCount, "Policy 4 item quantities are preserved")
+        assert_equal(0, task.bountyPoints)
+        assert_true(state.daily.revision > oldRevision)
+        local xp, quantity, revision = task.experience, task.rewardCount, state.daily.revision
+        state = api.state.ensure(player)
+        assert_equal(xp, state.daily.kills[1].experience, 'Reopening does not double XP again')
+        assert_equal(quantity, state.daily.kills[1].rewardCount)
+        assert_equal(revision, state.daily.revision)
+    end)
+    storage = beforeStorage
+    assert_true(ok, err)
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failed))
 if #errors > 0 then
 	print("\nFailed tests:")
@@ -3004,4 +3501,51 @@ if #errors > 0 then
 		print(string.format("  FAIL: %s\n        %s", entry.name, entry.err))
 	end
 	os.exit(1)
+end
+
+-- Optional fixtures written by the production packet writer for the native
+-- client parser smoke test. No credentials or live server are required.
+local fixtureDirectory = os.getenv('TASKBOARD_WIRE_FIXTURE_DIR')
+if fixtureDirectory then
+	api.config.weekly.expansionUnlockedByDefault = true
+	storage = {}
+	local state = api.state.ensure(player)
+	api.rules.chooseWeeklyDifficulty(player, state, 0)
+	api.daily.ensure(player, state)
+	local function fixture(name, send)
+		sentMessages = {}
+		send(player, state)
+		local file = assert(io.open(fixtureDirectory .. '/' .. name .. '.bin', 'wb'))
+		local selected
+        local subtype = ({bounty = 0, weekly = 1, daily = 3, ["gold-price"] = 4, ["daily-kills"] = 5, ["bounty-rewards"] = 6, ["daily-rewards"] = 7, ["daily-points"] = 8})[name]
+        for _, message in ipairs(sentMessages) do
+            if message.events[1].value == 0x5B and message.events[2].value == subtype then selected = message end
+        end
+        assert(selected, name)
+        for _, event in ipairs(selected.events) do
+			local width = ({byte = 1, u16 = 2, u32 = 4, u64 = 8})[event.operation]
+			assert(width, event.operation)
+			local value = event.value
+			for i = 1, width do
+				file:write(string.char(value % 256))
+				value = math.floor(value / 256)
+			end
+		end
+		file:write(string.char(0x99)) -- next opcode sentinel
+		file:close()
+	end
+	fixture('bounty', api.wire.sendBounty)
+	fixture('weekly', api.wire.sendWeekly)
+	fixture('daily', api.wire.sendDaily)
+	api.bountyGoldSessions[api.dailySessionKey(player)] = true
+	fixture('gold-price', api.wire.sendBounty)
+    api.dailyItemSessions[api.dailySessionKey(player)] = true
+    fixture('daily-kills', api.wire.sendDaily)
+    api.rewardDetailSessions[api.dailySessionKey(player)] = true
+    fixture('bounty-rewards', api.wire.sendBounty)
+    api.dailyRewardSessions[api.dailySessionKey(player)] = true
+    state.daily.kills[1].bonusPotionId = 36723
+    fixture('daily-rewards', api.wire.sendDaily)
+    api.dailyPointSessions[api.dailySessionKey(player)] = true
+    fixture('daily-points', api.wire.sendDaily)
 end

@@ -6,6 +6,8 @@ return function(api)
 	}
 
 	api.catalog = catalog
+	local creatureProducts = dofile((CORE_DIRECTORY or "data") .. "/modules/scripts/taskboard/creature_products.lua")
+	api.creatureProducts = creatureProducts
 
 	local function safeCall(object, methodName, ...)
 		if not object or type(object[methodName]) ~= "function" then
@@ -15,14 +17,10 @@ return function(api)
 		return ok and value or nil
 	end
 
-	local function isWeeklyDeliveryItem(itemType)
-		local ammoWeaponType = tonumber(rawget(_G, "WEAPON_AMMO"))
-		local weaponType = tonumber(safeCall(itemType, "getWeaponType"))
-		return ammoWeaponType == nil or weaponType == nil or weaponType ~= ammoWeaponType
-	end
 
 	function catalog.rebuild()
 		catalog.entries = {}
+		catalog.productCache = {}
 		catalog.byRaceId = {}
 
 		local monsterTypes = Game.getMonsterTypes() or {}
@@ -91,11 +89,6 @@ return function(api)
 			end
 		end
 
-		if #pool == 0 then
-			for _, entry in ipairs(entries) do
-				table.insert(pool, entry)
-			end
-		end
 		return pool
 	end
 
@@ -136,29 +129,43 @@ return function(api)
 		return raceIds
 	end
 
-	function catalog.getWeeklyItems()
-		local configuredItems = api.config.weeklyItems or {}
-		local itemTypeFactory = rawget(_G, "ItemType")
-		if itemTypeFactory == nil then
-			return configuredItems
+	function catalog.getCreatureProducts(difficulty, raceId)
+        ensureCatalog()
+        if catalog.productPoolSource ~= catalog.getPool then
+            catalog.productCache = {}
+            catalog.productPoolSource = catalog.getPool
+        end
+        local key = tostring(api.normalizeDifficulty(difficulty)) .. ":" .. tostring(raceId or "all")
+        if catalog.productCache[key] then return catalog.productCache[key] end
+		local result, seen = {}, {}
+		local settings = api.config.bounty.difficulties[api.normalizeDifficulty(difficulty)]
+		local function collect(loot)
+			for _, item in ipairs(loot or {}) do
+				local id = tonumber(item.itemId)
+                local obtainable = (tonumber(item.chance) or 0) > 0 and not item.unique and (tonumber(item.actionId) or 0) == 0
+				if obtainable and id and creatureProducts[id] and not seen[id] then
+					local itemType = ItemType(id)
+					if itemType and itemType:getId() == id and itemType:getName() ~= "" then
+						seen[id] = true
+						table.insert(result, {id = id, min = settings.weeklyItemMinimum, max = settings.weeklyItemMaximum,
+                            chance = math.min(100000, tonumber(item.chance) or 0),
+                            minCount = math.max(1, tonumber(item.minCount) or 1),
+                            maxCount = math.max(1, tonumber(item.maxCount) or 1)})
+					end
+				end
+				if obtainable then collect(item.childLoot) end
+			end
 		end
+		local entries = raceId and {catalog.get(raceId)} or catalog.getPool(difficulty)
+		for _, entry in ipairs(entries) do
+			collect(safeCall(entry.monsterType, "getLoot"))
+		end
+		table.sort(result, function(a, b) return a.id < b.id end)
+        catalog.productCache[key] = result
+		return result
+	end
 
-		local usableItems = {}
-		for _, configuredItem in ipairs(configuredItems) do
-			local itemId = api.toFiniteNumber(configuredItem.id)
-			local itemType
-			if itemId and itemId == math.floor(itemId) and itemId > 0 and itemId <= 0xFFFF then
-				local resolved, value = pcall(itemTypeFactory, itemId)
-				itemType = resolved and value or nil
-			end
-			local resolvedId = tonumber(safeCall(itemType, "getId")) or 0
-			local resolvedName = tostring(safeCall(itemType, "getName") or "")
-			if resolvedId == itemId and resolvedName ~= "" and isWeeklyDeliveryItem(itemType) then
-				table.insert(usableItems, configuredItem)
-			else
-				api.diagnostics.trace("catalog", "ignored invalid weekly delivery item id={}", tostring(configuredItem.id))
-			end
-		end
-		return usableItems
+	function catalog.getWeeklyItems(difficulty)
+		return catalog.getCreatureProducts(difficulty)
 	end
 end
