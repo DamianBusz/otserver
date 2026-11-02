@@ -1180,8 +1180,30 @@ return function(api)
 		return api.offerState.available
 	end
 
+	local function deliverInventoryReward(player, offer)
+        local backpack = player:getSlotItem(CONST_SLOT_BACKPACK)
+        if not backpack or not backpack:isContainer() then
+            player:sendCancelMessage('Equip a backpack to receive this reward. No points were spent.')
+            return false
+        end
+        local item = Game.createItem(offer.id, 1)
+        if not item then return false end
+        -- Hunting rewards are regular inventory items, not account-bound Store items.
+        if backpack:addItemEx(item, INDEX_WHEREEVER, 0) ~= RETURNVALUE_NOERROR then
+            item:remove()
+            player:sendCancelMessage('Make room in your backpack and check your capacity. No points were spent.')
+            return false
+        end
+        player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'Your ' .. (offer.name or item:getName()) .. ' was delivered to your backpack.')
+        return true
+    end
+
 	local function grantOffer(player, state, offer)
 		if offer.kind == api.offerKind.item or offer.kind == api.offerKind.decoration then
+            if offer.id == 60001 or offer.id == 60004 then
+                return HuntingShopRewards and HuntingShopRewards.purchaseBag(player, offer.id) == true
+            end
+			if offer.kind == api.offerKind.item then return deliverInventoryReward(player, offer) end
 			return deliverStoreRewards(player, offer)
 		end
 		if offer.kind == api.offerKind.mount then

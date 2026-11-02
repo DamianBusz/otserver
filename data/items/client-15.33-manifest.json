@@ -3,8 +3,11 @@
   "assets": {
     "data/items/appearances.dat": {
       "source": "appearances-fedd91264b6f107851d1ca1086978de66212a98115bfca37c38774adb5f01d69.dat",
-      "sha256": "fedd91264b6f107851d1ca1086978de66212a98115bfca37c38774adb5f01d69",
-      "bytes": 5018938
+      "sha256": "76b81e8b392821c9722e9b30d276598241f34af311bdffb527bcae119731cce9",
+      "bytes": 5019942,
+      "upstream_sha256": "fedd91264b6f107851d1ca1086978de66212a98115bfca37c38774adb5f01d69",
+      "custom_overlay": "data/items/hunting-rewards/appearances.dat",
+      "custom_overlay_sha256": "74f9c51e7832d1ba6f42f94a6cf450f53e3f6ffb3f080f9bfc340e1021b0fb26"
     },
     "data/items/proficiencies.json": {
       "source": "proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",

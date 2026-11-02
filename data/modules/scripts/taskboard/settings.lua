@@ -193,8 +193,7 @@ return function(api)
 			itemCompletionPoints = 75,
 			completionSeals = 1,
 		},
-		-- Only item and wheel offers are enabled by default so a fresh server does
-		-- not promise mount/outfit ids that its own data pack may not contain.
+		-- Repeatable hunting rewards; outfit unlocks are rolled when the bag is opened.
 		shopOffers = {
 			{
 				kind = 0,
@@ -203,6 +202,26 @@ return function(api)
 				description = "A compact reward for a successful hunt.",
 				price = 100,
 			},
+            {
+                kind = 0, id = 53695, name = "Lunar Ascension Orb",
+                description = "Maximise one modified weapon proficiency perk to rank 10. Use it in Weapon Proficiency > Perk Shaping.",
+                price = 20000,
+            },
+            {
+                kind = 0, id = 36827, name = "Drome Potion Box",
+                description = "Open to receive one random Drome potion in your backpack.",
+                price = 1500,
+            },
+            {
+                kind = 0, id = 60001, name = "Full Outfit Reward Bag",
+                description = "Auto-opens in your backpack: one unowned Store outfit with both addons and appearances. No charge if all are owned.",
+                price = 10000,
+            },
+            {
+                kind = 0, id = 60004, name = "Premium Mount Reward Bag",
+                description = "Auto-opens in your backpack: one unowned premium Store mount. No quest or tamed mounts. No charge if all are owned.",
+                price = 10000,
+            },
 		},
 		soulpit = {
 			authorizationSeconds = 10,

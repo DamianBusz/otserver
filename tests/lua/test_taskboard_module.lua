@@ -166,6 +166,8 @@ Game = {
 
 local storage = {}
 local player = {
+    sendTextMessage = function() end,
+    sendCancelMessage = function() end,
 	client = { version = 1525 },
 	taskPoints = 500,
 	thirdSlotUnlocked = false,
@@ -2036,8 +2038,8 @@ test("outfit purchases survive sex changes without a second charge", function()
 	end
 end)
 
-test("shop item rewards are delivered to the store inbox", function()
-	local originalGetStoreInbox = player.getStoreInbox
+test("shop items enter the backpack without Store ownership restrictions", function()
+	local originalGetStoreInbox = player.getSlotItem
 	local originalCreateItem = Game.createItem
 	local originalSystemTime = rawget(_G, "systemTime")
 	local originalStoreAttribute = rawget(_G, "ITEM_ATTRIBUTE_STORE")
@@ -2045,7 +2047,7 @@ test("shop item rewards are delivered to the store inbox", function()
 	local originalFlagNoLimit = rawget(_G, "FLAG_NOLIMIT")
 	local originalReturnNoError = rawget(_G, "RETURNVALUE_NOERROR")
 	local originalTaskPoints = player.taskPoints
-	local inbox = { items = {} }
+	local inbox = { items = {}, isContainer = function() return true end }
 	function inbox:getItems()
 		return self.items
 	end
@@ -2057,7 +2059,7 @@ test("shop item rewards are delivered to the store inbox", function()
 		table.insert(self.items, item)
 		return RETURNVALUE_NOERROR
 	end
-	player.getStoreInbox = function()
+	player.getSlotItem = function()
 		return inbox
 	end
 	Game.createItem = function(itemId, count)
@@ -2087,11 +2089,11 @@ test("shop item rewards are delivered to the store inbox", function()
 		assert_equal(400, player.taskPoints)
 		assert_equal(1, #inbox.items)
 		assert_equal(3043, inbox.items[1].id)
-		assert_equal(player, inbox.items[1].owner)
-		assert_equal(1234, inbox.items[1].store)
+		assert_equal(nil, inbox.items[1].owner)
+		assert_equal(nil, inbox.items[1].store)
 	end)
 
-	player.getStoreInbox = originalGetStoreInbox
+	player.getSlotItem = originalGetStoreInbox
 	Game.createItem = originalCreateItem
 	rawset(_G, "systemTime", originalSystemTime)
 	rawset(_G, "ITEM_ATTRIBUTE_STORE", originalStoreAttribute)
@@ -3494,6 +3496,47 @@ test("reward increase preserves saved hunts and rolls and applies exactly once",
     assert_true(ok, err)
 end)
 
+test("Hunting shop excludes backpacks, grants remaining rewards and refunds failed delivery", function()
+    local oldRewards = HuntingShopRewards
+    local oldInbox, oldCreate, oldPoints = player.getSlotItem, Game.createItem, player.taskPoints
+    local items, fail = {}, false
+    HuntingShopRewards = {purchaseBag = function(_,id)
+        if fail then return false end
+        items[#items+1]={id=id,opened=true}
+        return true
+    end}
+    player.getSlotItem = function() return {
+        isContainer = function() return true end, getItems = function() return items end, getMaxCapacity = function() return 100 end,
+        addItemEx = function(_, item) if fail then return 1 end items[#items + 1] = item return 0 end
+    } end
+    Game.createItem = function(id) return {id=id, remove=function() end, setOwner=function() end, setAttribute=function() end} end
+    local ok, err = pcall(function()
+        local state = api.state.load(player)
+        assert_equal(5, #api.config.shopOffers, "Only five item rewards remain; no backpacks")
+        local expected = {53695,36827,60001,60004}
+        for offset, id in ipairs(expected) do
+            local offer = api.config.shopOffers[offset + 1]
+            assert_equal(id, offer.id)
+            player.taskPoints = offer.price * 2
+            assert_true(api.rules.purchaseShopOffer(player, state, offset))
+            assert_equal(id, items[#items].id)
+            if id == 60001 or id == 60004 then assert_true(items[#items].opened, 'Bag automatically unlocks at purchase') end
+            assert_equal(offer.price, player.taskPoints)
+            assert_true(api.rules.purchaseShopOffer(player, state, offset), 'Offer remains repeatable')
+            assert_equal(0, player.taskPoints)
+            assert_true(not api.rules.purchaseShopOffer(player, state, offset), 'No free rewards')
+            player.taskPoints = offer.price
+            fail = true
+            assert_true(not api.rules.purchaseShopOffer(player, state, offset))
+            assert_equal(offer.price, player.taskPoints, 'Failed delivery refunds all points')
+            fail = false
+        end
+    end)
+    player.getSlotItem, Game.createItem, player.taskPoints = oldInbox, oldCreate, oldPoints
+    HuntingShopRewards = oldRewards
+    assert_true(ok, err)
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failed))
 if #errors > 0 then
 	print("\nFailed tests:")
@@ -3517,24 +3560,31 @@ if fixtureDirectory then
 		send(player, state)
 		local file = assert(io.open(fixtureDirectory .. '/' .. name .. '.bin', 'wb'))
 		local selected
-        local subtype = ({bounty = 0, weekly = 1, daily = 3, ["gold-price"] = 4, ["daily-kills"] = 5, ["bounty-rewards"] = 6, ["daily-rewards"] = 7, ["daily-points"] = 8})[name]
+        local subtype = ({bounty = 0, weekly = 1, shop = 2, daily = 3, ["gold-price"] = 4, ["daily-kills"] = 5, ["bounty-rewards"] = 6, ["daily-rewards"] = 7, ["daily-points"] = 8})[name]
         for _, message in ipairs(sentMessages) do
             if message.events[1].value == 0x5B and message.events[2].value == subtype then selected = message end
         end
         assert(selected, name)
         for _, event in ipairs(selected.events) do
 			local width = ({byte = 1, u16 = 2, u32 = 4, u64 = 8})[event.operation]
-			assert(width, event.operation)
+            if event.operation == 'string' then
+                local value = tostring(event.value)
+                file:write(string.char(#value % 256, math.floor(#value / 256)))
+                file:write(value)
+            else
+                assert(width, event.operation)
 			local value = event.value
 			for i = 1, width do
 				file:write(string.char(value % 256))
 				value = math.floor(value / 256)
 			end
+            end
 		end
 		file:write(string.char(0x99)) -- next opcode sentinel
 		file:close()
 	end
 	fixture('bounty', api.wire.sendBounty)
+    fixture('shop', api.wire.sendShop)
 	fixture('weekly', api.wire.sendWeekly)
 	fixture('daily', api.wire.sendDaily)
 	api.bountyGoldSessions[api.dailySessionKey(player)] = true

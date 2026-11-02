@@ -213,11 +213,13 @@ class PlayerFunctions {
 	static int luaPlayerRemoveOutfit(lua_State* L);
 	static int luaPlayerRemoveOutfitAddon(lua_State* L);
 	static int luaPlayerHasOutfit(lua_State* L);
+	static int luaPlayerGetOwnedOutfitAddons(lua_State* L);
 	static int luaPlayerSendOutfitWindow(lua_State* L);
 
 	static int luaPlayerAddMount(lua_State* L);
 	static int luaPlayerRemoveMount(lua_State* L);
 	static int luaPlayerHasMount(lua_State* L);
+	static int luaPlayerOwnsMount(lua_State* L);
 
 	static int luaPlayerAddFamiliar(lua_State* L);
 	static int luaPlayerRemoveFamiliar(lua_State* L);

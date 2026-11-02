@@ -1,6 +1,7 @@
 local callback = EventCallback("TaskboardPlayerOnLoginComplete")
 
 function callback.playerOnLoginComplete(player)
+    if HuntingShopRewards then HuntingShopRewards.recoverLegacyItems(player) end
 	local taskboard = rawget(_G, "Taskboard")
 	if not taskboard then
 		if logger and logger.trace then

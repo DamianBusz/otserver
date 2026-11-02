@@ -155,3 +155,92 @@ cmake --build --preset <configured-preset> --target canary
 ```
 
 Do not create a separate build tree solely for Task Board validation. Reuse the maintained preset and follow the platform build guidance in `docs/development.md` if configuration is required.
+
+
+## Hunting shop rewards
+
+The existing crystal coin and Wheel promotion offer remain. New repeatable
+Hunting Task Point purchases are:
+
+| Reward | Item ID | Cost | Use |
+| --- | ---: | ---: | --- |
+| Lunar Ascension Orb | 53695 | 20,000 | Maximise one modified proficiency perk to rank 10 through Perk Shaping. |
+| Drome Potion Box (Drome Cube) | 36827 | 1,500 | One uniformly random potion from IDs 36723–36728, delivered to the equipped backpack. |
+| Full Outfit Reward Bag | 60001 | 10,000 | Random full store outfit with both addons and both sex appearances. |
+| Premium Mount Reward Bag | 60004 | 10,000 | Random unowned premium Store mount. |
+
+The outfit pool comes from the loaded Game Store catalog's full outfit offers
+(`addon = 3`), deduplicated by male/female pair. A pair is excluded once both
+appearances are fully owned. `Player:getOwnedOutfitAddons` reads actual unlocked
+addon masks, independently of current sex, premium access, or GM wearability.
+Empty pools preserve the bag. Partial grants or consumption failures restore
+previous ownership. Potion creation/insertion or consumption failures remove the unclaimed potion and retain the box. Only a reward in its user's inventory/inbox can be
+opened. Ordinary item purchases go directly into the equipped backpack without Store ownership attributes. Delivery respects space and carrying capacity; failure refunds all points. Decorations retain their Store Inbox delivery. On login, earlier ordinary hunting rewards with the old owner/Store stamp are repaired in place and moved to the backpack when space permits; overflow stays in the Store Inbox without movement restrictions. No items or points are duplicated.
+
+Private appearance IDs 60001–60003 are generated with
+`tools/build_hunting_reward_assets.py ORIGINAL_APPEARANCES --client-root OTC_ROOT`.
+The original bank must match the upstream SHA in the 15.33 manifest. Server
+`data/items/appearances.dat` contains that original bank plus the small
+`data/items/hunting-rewards/appearances.dat` overlay; its combined hash and
+upstream/overlay hashes are recorded separately. Client official files stay in
+`data/things/1533/` and `data/sounds/1533/` unchanged. The matching OTClient loads
+its module-owned overlay and PNG frames afterward; collisions and IDs outside
+60000–65535 are rejected without partially updating the client bank. No asset
+installer fallback or hash-security setting is changed. These private items
+require the matching custom client.
+
+The generated backpack source sheets and prompts are retained in the client
+repository. Runtime frames are 32x32 transparent PNGs under
+`modules/game_things/hunting_rewards/`. `{phase}` in OTML image paths selects
+an animation frame without modifying the official sprite atlas.
+
+Validation: task-board purchase/refund tests, 11 consumable tests, native
+ownership/orb/capacity tests, native shop wire parsing through the next opcode,
+and rendered UI checks with actual custom item sprites and animation captures.
+
+
+### Premium cosmetic bags and stable backpack animation
+
+The outfit bag (60001) draws only full, paid offers explicitly marked by the
+premium Store outfits catalog. It excludes all other categories, including
+quest/event and tournament rewards. It unlocks both appearances and addons.
+The mount bag (60004, 10,000 Hunting Task Points) draws only from the similarly
+marked premium Store mounts catalog. Both pools deduplicate offers, exclude
+owned rewards and keep the bag when the pool is exhausted. Failed delivery or
+consumption rolls back the newly granted reward. Mount ownership uses
+`Player:ownsMount`, independently of riding eligibility, premium time or GM access.
+
+Backpacks retain four phases but use one fixed image per backpack with renderer
+color pulsing. The alpha silhouette, metal/leather pixels and position do not
+change between frames. Client assets still load from `data/things/1533/`, sounds
+from `data/sounds/1533/`, with the private item overlay loaded afterwards.
+
+Buying either cosmetic bag places it in the equipped backpack and immediately
+opens/consumes it through the same atomic unlock handler. A missing/full backpack,
+exhausted reward pool, failed grant or failed consumption rejects the purchase and
+refunds its points. Bags obtained through other means remain manually usable.
+`tests/check_hunting_reward_catalog.py` checks production pools against the
+Store markers and names in the outfit/mount XML, preventing stale catalog IDs
+from accidentally granting quest or taming rewards.
+
+
+### Demon and goblin skull backpacks
+
+Demon Skull Backpack (60005) and Goblin Skull Backpack (60006) use the same
+24/28-slot capacities and 2,500/5,000-point prices as Demonhide/Abyssal.
+They share the reference's coarse pixel-art style but have distinct skulls:
+a broad horned demon and a narrow goblin with pointed cheekbones. Their
+neutral leather and bone stay fixed while red/green eyes pulse. Four phases
+last 300 ms each for Demon Skull and 450 ms each for Goblin Skull.
+These backpack offers have been retired from the Hunting Task Shop. Regeneration retains all four
+backpack sprite mappings and does not modify the official client bank.
+
+
+### Backpack offers removed
+
+The Hunting Task Shop no longer sells any backpacks (60002, 60003, 60005,
+60006). Its item offers are crystal coin, Lunar Ascension Orb, Drome Potion Box,
+Full Outfit Reward Bag and Premium Mount Reward Bag, followed by the existing
+promotion-point offer. The mount bag is now zero-based offer index 4. Existing
+backpack item definitions and ownership remain supported; this removal changes
+the shop catalog only.

@@ -86081,4 +86081,37 @@ Granted by TibiaGoals.com"/>
 	<item id="54640" article="a" name="scraps of a radiant attire">
 		<attribute key="weight" value="100"/>
 	</item>
+	<item id="60001" article="a" name="full outfit reward bag">
+		<attribute key="primarytype" value="valuables"/>
+		<attribute key="weight" value="200"/>
+		<attribute key="description" value="Open to unlock a random unowned full store outfit, including both addons"/>
+	</item>
+	<item id="60002" article="a" name="demonhide backpack">
+		<attribute key="primarytype" value="containers"/>
+		<attribute key="containerSize" value="24"/>
+		<attribute key="weight" value="1800"/>
+		<attribute key="slotType" value="backpack"/>
+	</item>
+	<item id="60003" article="a" name="abyssal demon backpack">
+		<attribute key="primarytype" value="containers"/>
+		<attribute key="containerSize" value="28"/>
+		<attribute key="weight" value="1800"/>
+		<attribute key="slotType" value="backpack"/>
+	</item>
+	<item id="60004" article="a" name="premium mount reward bag">
+		<attribute key="weight" value="100" />
+		<attribute key="description" value="Open to unlock one random unowned premium Store mount." />
+	</item>
+	<item id="60005" article="a" name="demon skull backpack">
+		<attribute key="primarytype" value="containers"/>
+		<attribute key="containerSize" value="24"/>
+		<attribute key="weight" value="1800"/>
+		<attribute key="slotType" value="backpack"/>
+	</item>
+	<item id="60006" article="a" name="goblin skull backpack">
+		<attribute key="primarytype" value="containers"/>
+		<attribute key="containerSize" value="28"/>
+		<attribute key="weight" value="1800"/>
+		<attribute key="slotType" value="backpack"/>
+	</item>
 </items>
