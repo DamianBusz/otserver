@@ -389,8 +389,6 @@ void CanaryServer::logInfos() {
 	logger.info("Linked with {} for Lua support", getLuaRuntimeDisplayVersion());
 
 	logger.info("A server developed by: {}", ProtocolStatus::SERVER_DEVELOPERS);
-	logger.info("Visit our website for updates, support, and resources: "
-	            "https://docs.opentibiabr.com/");
 }
 
 /**
