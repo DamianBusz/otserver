@@ -2,8 +2,8 @@
 -- Accounts for test server
 --
 
-INSERT INTO `accounts`
-(`id`, `name`  , `email`   , `password`                                , `type`, `coins`) VALUES
+INSERT INTO "accounts"
+("id", "name"  , "email"   , "password"                                , "type", "coins") VALUES
 (100 , 'dawn'  , '@dawn'   , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000),
 (101 , 'test1' , '@test1'  , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000),
 (102 , 'test2' , '@test2'  , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000),
@@ -20,3 +20,5 @@ INSERT INTO `accounts`
 (113 , 'test13', '@test13' , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000),
 (114 , 'test14', '@test14' , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000),
 (115 , 'test15', '@test15' , 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 1     , 10000);
+
+SELECT setval(pg_get_serial_sequence('accounts', 'id'), (SELECT MAX("id") FROM "accounts"));

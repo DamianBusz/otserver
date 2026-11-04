@@ -103,6 +103,6 @@ bool KVSQL::saveAll() {
 
 DBInsert KVSQL::dbUpdate() {
 	auto insert = DBInsert("INSERT INTO `kv_store` (`key_name`, `timestamp`, `value`) VALUES");
-	insert.upsert({ "key_name", "timestamp", "value" });
+	insert.upsert({ "key_name" }, { "timestamp", "value" });
 	return insert;
 }

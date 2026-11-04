@@ -44,7 +44,7 @@ find_package(
     REQUIRED
 )
 find_package(LuaJIT REQUIRED)
-find_package(MySQL REQUIRED)
+find_package(PostgreSQL REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -89,11 +89,6 @@ find_package(
 find_package(spdlog REQUIRED)
 find_package(
     unofficial-argon2
-    CONFIG
-    REQUIRED
-)
-find_package(
-    unofficial-libmariadb
     CONFIG
     REQUIRED
 )

@@ -93,7 +93,7 @@ local function updateLivestreamStatus(player, status, viewers)
 end
 
 local function upsertLivestreamStatus(player, status, viewers)
-	return executeLivestreamQuery("INSERT INTO `active_livestream_casters` (`caster_id`, `livestream_status`, `livestream_viewers`) VALUES (" .. player:getGuid() .. ", " .. status .. ", " .. viewers .. ") ON DUPLICATE KEY UPDATE `livestream_status` = " .. status .. ", `livestream_viewers` = " .. viewers)
+	return executeLivestreamQuery("INSERT INTO `active_livestream_casters` (`caster_id`, `livestream_status`, `livestream_viewers`) VALUES (" .. player:getGuid() .. ", " .. status .. ", " .. viewers .. ") ON CONFLICT (`caster_id`) DO UPDATE SET `livestream_status` = EXCLUDED.`livestream_status`, `livestream_viewers` = EXCLUDED.`livestream_viewers`")
 end
 
 local function updateLivestreamViewerCount(player)

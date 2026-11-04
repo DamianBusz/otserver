@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 #include <fmt/format.h>
-#include <mysql/mysql.h>
+#include <libpq-fe.h>
 
 #include "database/database.hpp"
 
@@ -132,13 +132,13 @@ class TestDatabase final {
 		return quoted;
 	}
 
-	static std::string resolveMysqlClient(const EnvMap &env) {
+	static std::string resolvePostgreSQLClient(const EnvMap &env) {
 		if (auto configured = get(env, "TEST_DB_CLIENT", ""); !configured.empty()) {
 			return configured;
 		}
 
 		const auto pathValue = std::getenv("PATH") ? std::string { std::getenv("PATH") } : std::string {};
-		for (const auto name : { "mysql", "mariadb" }) {
+		for (const auto name : { "psql" }) {
 			std::string::size_type begin = 0;
 			while (begin <= pathValue.size()) {
 				const auto end = pathValue.find(':', begin);
@@ -156,7 +156,7 @@ class TestDatabase final {
 			}
 		}
 
-		return "mysql";
+		return "psql";
 	}
 
 	static bool isSafeTestDatabaseName(std::string_view database) {
@@ -172,76 +172,63 @@ class TestDatabase final {
 		});
 	}
 
-	static std::string escapeSqlString(MYSQL* handle, const std::string &value) {
-		std::string escaped;
-		escaped.resize(value.size() * 2 + 1);
-		const auto size = mysql_real_escape_string(handle, escaped.data(), value.data(), static_cast<unsigned long>(value.size()));
-		escaped.resize(size);
-		return escaped;
-	}
-
-	static MYSQL* connectServer(const DbConfig &config) {
-		auto* handle = mysql_init(nullptr);
-		if (!handle) {
-			throw TestEnvError("Failed to initialize MySQL connection handle.");
+	static PGconn* connectServer(const DbConfig &config, const std::string &database) {
+		const auto port = std::to_string(config.port);
+		const char* keywords[] = { "host", "port", "user", "password", "dbname", nullptr };
+		const char* values[] = { config.sock.empty() ? config.host.c_str() : config.sock.c_str(), port.c_str(), config.user.c_str(), config.pass.c_str(), database.c_str(), nullptr };
+		auto* handle = PQconnectdbParams(keywords, values, 0);
+		if (!handle || PQstatus(handle) != CONNECTION_OK) {
+			const std::string error = handle ? PQerrorMessage(handle) : "unable to allocate connection";
+			if (handle) {
+				PQfinish(handle);
+			}
+			throw TestEnvError("Failed to connect to PostgreSQL for schema validation: " + error);
 		}
-
-		bool reconnect = true;
-		mysql_options(handle, MYSQL_OPT_RECONNECT, &reconnect);
-
-		if (!mysql_real_connect(handle, config.host.c_str(), config.user.c_str(), config.pass.c_str(), nullptr, config.port, config.sock.c_str(), 0)) {
-			const std::string error = mysql_error(handle);
-			mysql_close(handle);
-			throw TestEnvError("Failed to connect to MySQL server for schema validation: " + error);
-		}
-
 		return handle;
 	}
 
-	static bool queryHasRows(MYSQL* handle, const std::string &query) {
-		if (mysql_query(handle, query.c_str()) != 0) {
-			throw TestEnvError("Failed to validate test database schema: " + std::string(mysql_error(handle)));
+	static bool queryHasRows(PGconn* handle, const std::string &query) {
+		PGresult* result = PQexec(handle, query.c_str());
+		if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
+			const std::string error = PQerrorMessage(handle);
+			PQclear(result);
+			throw TestEnvError("Failed to validate test database schema: " + error);
 		}
-
-		MYSQL_RES* result = mysql_store_result(handle);
-		if (!result) {
-			throw TestEnvError("Failed to read test database schema validation result: " + std::string(mysql_error(handle)));
-		}
-
-		const auto hasRows = mysql_num_rows(result) > 0;
-		mysql_free_result(result);
+		const auto hasRows = PQntuples(result) > 0;
+		PQclear(result);
 		return hasRows;
 	}
 
 	static bool schemaNeedsReset(const DbConfig &config) {
-		std::unique_ptr<MYSQL, decltype(&mysql_close)> handle(connectServer(config), mysql_close);
-		const auto escapedDatabase = escapeSqlString(handle.get(), config.database);
-
-		const auto databaseExists = queryHasRows(handle.get(), fmt::format("SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '{}'", escapedDatabase));
+		std::unique_ptr<PGconn, decltype(&PQfinish)> server(connectServer(config, "postgres"), PQfinish);
+		char* escapedDatabase = PQescapeLiteral(server.get(), config.database.data(), config.database.size());
+		if (!escapedDatabase) {
+			throw TestEnvError("Failed to escape test database name.");
+		}
+		const auto databaseExists = queryHasRows(server.get(), fmt::format("SELECT 1 FROM pg_database WHERE datname = {}", escapedDatabase));
+		PQfreemem(escapedDatabase);
 		if (!databaseExists) {
 			return true;
 		}
 
-		const auto hasPlayerComment = queryHasRows(handle.get(), fmt::format("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '{}' AND TABLE_NAME = 'players' AND COLUMN_NAME = 'comment' AND COLUMN_TYPE = 'varchar(255)' AND IS_NULLABLE = 'NO' AND COLUMN_DEFAULT = ''", escapedDatabase));
+		std::unique_ptr<PGconn, decltype(&PQfinish)> database(connectServer(config, config.database), PQfinish);
+		const auto hasPlayerComment = queryHasRows(database.get(), "SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'players' AND column_name = 'comment' AND data_type = 'character varying' AND is_nullable = 'NO'");
 
 		return !hasPlayerComment;
 	}
 
-	static std::filesystem::path writeMysqlDefaultsFile(const DbConfig &config) {
-		auto path = std::filesystem::current_path() / fmt::format(".canary-test-mysql-{}.cnf", std::chrono::steady_clock::now().time_since_epoch().count());
+	static std::filesystem::path writePostgreSQLServiceFile(const DbConfig &config) {
+		auto path = std::filesystem::current_path() / fmt::format(".canary-test-postgresql-{}.conf", std::chrono::steady_clock::now().time_since_epoch().count());
 		std::ofstream file(path);
 		if (!file) {
-			throw TestEnvError("Failed to create temporary MySQL defaults file.");
+			throw TestEnvError("Failed to create temporary PostgreSQL service file.");
 		}
 
-		file << "[client]\n";
-		file << "host=" << config.host << "\n";
+		file << "[canary_test]\n";
+		file << "host=" << (config.sock.empty() ? config.host : config.sock) << "\n";
 		file << "user=" << config.user << "\n";
 		file << "password=" << config.pass << "\n";
 		file << "port=" << config.port << "\n";
-		if (!config.sock.empty()) {
-			file << "socket=" << config.sock << "\n";
-		}
 		file.close();
 		std::filesystem::permissions(
 			path,
@@ -269,24 +256,21 @@ class TestDatabase final {
 			throw TestEnvError("schema.sql not found for test database reset: " + config.schemaPath);
 		}
 
-		std::filesystem::path defaultsFile;
+		std::filesystem::path serviceFile;
 		try {
-			defaultsFile = writeMysqlDefaultsFile(config);
-			runCommand(fmt::format(
-				"{} --defaults-extra-file={} --execute={}",
-				shellQuote(config.clientPath),
-				shellQuote(defaultsFile.string()),
-				shellQuote(fmt::format("DROP DATABASE IF EXISTS `{}`; CREATE DATABASE `{}` CHARACTER SET utf8;", config.database, config.database))
-			));
-			runCommand(fmt::format("{} --defaults-extra-file={} {} < {}", shellQuote(config.clientPath), shellQuote(defaultsFile.string()), shellQuote(config.database), shellQuote(config.schemaPath)));
+			serviceFile = writePostgreSQLServiceFile(config);
+			const auto prefix = fmt::format("PGSERVICEFILE={} PGSERVICE=canary_test {} -v ON_ERROR_STOP=1", shellQuote(serviceFile.string()), shellQuote(config.clientPath));
+			runCommand(fmt::format("{} --dbname=postgres --command={}", prefix, shellQuote(fmt::format("DROP DATABASE IF EXISTS \"{}\" WITH (FORCE)", config.database))));
+			runCommand(fmt::format("{} --dbname=postgres --command={}", prefix, shellQuote(fmt::format("CREATE DATABASE \"{}\"", config.database))));
+			runCommand(fmt::format("{} --dbname={} --file={}", prefix, shellQuote(config.database), shellQuote(config.schemaPath)));
 		} catch (...) {
-			if (!defaultsFile.empty()) {
-				std::filesystem::remove(defaultsFile);
+			if (!serviceFile.empty()) {
+				std::filesystem::remove(serviceFile);
 			}
 			throw;
 		}
 
-		std::filesystem::remove(defaultsFile);
+		std::filesystem::remove(serviceFile);
 	}
 
 public:
@@ -300,7 +284,7 @@ public:
 			std::string user = get(env, "TEST_DB_USER", "root");
 			std::string pass = get(env, "TEST_DB_PASSWORD", nullptr, /*required=*/true);
 			std::string database = get(env, "TEST_DB_NAME", "canary_test");
-			std::string portStr = get(env, "TEST_DB_PORT", "3306");
+			std::string portStr = get(env, "TEST_DB_PORT", "5432");
 			auto port = static_cast<uint32_t>(std::strtoul(portStr.c_str(), nullptr, 10));
 			std::string sock = get(env, "TEST_DB_SOCKET", "");
 			std::string schemaPath = get(env, "TEST_DB_SCHEMA", nullptr);
@@ -318,7 +302,7 @@ public:
 				.port = port,
 				.sock = sock,
 				.schemaPath = schemaPath,
-				.clientPath = resolveMysqlClient(env),
+				.clientPath = resolvePostgreSQLClient(env),
 				.allowReset = getBool(env, "TEST_DB_ALLOW_RESET", false),
 			};
 

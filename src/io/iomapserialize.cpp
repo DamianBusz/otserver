@@ -405,7 +405,7 @@ bool IOMapSerialize::SaveHouseInfoGuard() {
 
 	std::ostringstream query;
 	DBInsert houseUpdate("INSERT INTO `houses` (`id`, `owner`, `paid`, `warnings`, `name`, `town_id`, `rent`, `size`, `beds`, `bidder`, `bidder_name`, `highest_bid`, `internal_bid`, `bid_end_date`, `state`, `transfer_status`) VALUES ");
-	houseUpdate.upsert({ "owner", "paid", "warnings", "name", "town_id", "rent", "size", "beds", "bidder", "bidder_name", "highest_bid", "internal_bid", "bid_end_date", "state", "transfer_status" });
+	houseUpdate.upsert({ "id" }, { "owner", "paid", "warnings", "name", "town_id", "rent", "size", "beds", "bidder", "bidder_name", "highest_bid", "internal_bid", "bid_end_date", "state", "transfer_status" });
 
 	for (const auto &[key, house] : g_game().map.houses.getHouses()) {
 		auto stateValue = magic_enum::enum_integer(house->getState());
@@ -421,7 +421,7 @@ bool IOMapSerialize::SaveHouseInfoGuard() {
 	}
 
 	DBInsert listUpdate("INSERT INTO `house_lists` (`house_id` , `listid` , `list`, `version`) VALUES ");
-	listUpdate.upsert({ "list", "version" });
+	listUpdate.upsert({ "house_id", "listid" }, { "list", "version" });
 	auto version = getTimeUsNow();
 
 	for (const auto &[key, house] : g_game().map.houses.getHouses()) {

@@ -101,7 +101,8 @@ end
 
 function UpdateDailyRewardServerSave()
 	local counterKey = db.escapeString(DAILY_REWARD_SERVER_SAVE_COUNT_KEY)
-	local updated = db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. DailyReward.storages.lastServerSave .. ", " .. os.time() .. "), (" .. counterKey .. ", 1) ON DUPLICATE KEY UPDATE `value` = CASE WHEN `key` = " .. counterKey .. " THEN `value` + 1 ELSE VALUES(`value`) END")
+	local lastSaveKey = db.escapeString(tostring(DailyReward.storages.lastServerSave))
+	local updated = db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. lastSaveKey .. ", " .. db.escapeString(tostring(os.time())) .. "), (" .. counterKey .. ", '1') ON CONFLICT (`key`) DO UPDATE SET `value` = CASE WHEN EXCLUDED.`key` = " .. counterKey .. " THEN (`global_storage`.`value`::bigint + 1)::text ELSE EXCLUDED.`value` END")
 	if not updated then
 		logger.error("[UpdateDailyRewardServerSave] Failed to update the daily reward claim window and save counter.")
 		return false
@@ -110,11 +111,11 @@ function UpdateDailyRewardServerSave()
 end
 
 function UpdateDailyRewardGlobalStorage(key, value)
-	db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. key .. ", " .. value .. ") ON DUPLICATE KEY UPDATE `value` = " .. value)
+	db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. db.escapeString(tostring(key)) .. ", " .. db.escapeString(tostring(value)) .. ") ON CONFLICT (`key`) DO UPDATE SET `value` = EXCLUDED.`value`")
 end
 
 function RetrieveGlobalStorage(key)
-	local resultId = db.storeQuery("SELECT `value` FROM `global_storage` WHERE `key` = " .. key)
+	local resultId = db.storeQuery("SELECT `value` FROM `global_storage` WHERE `key` = " .. db.escapeString(tostring(key)))
 	if resultId ~= false then
 		local val = Result.getNumber(resultId, "value")
 		Result.free(resultId)

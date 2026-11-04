@@ -1,9 +1,5 @@
 function getGlobalStorage(key)
-	local keyNumber = tonumber(key)
-	if not keyNumber then
-		key = "'" .. key .. "'"
-	end
-	local resultId = db.storeQuery("SELECT `value` FROM `global_storage` WHERE `key` = " .. key)
+	local resultId = db.storeQuery("SELECT `value` FROM `global_storage` WHERE `key` = " .. db.escapeString(tostring(key)))
 	if resultId ~= false then
 		local isNumber = tonumber(Result.getString(resultId, "value"))
 		if isNumber then
@@ -20,15 +16,7 @@ function getGlobalStorage(key)
 end
 
 function setGlobalStorage(key, value)
-	local keyNumber = tonumber(key)
-	if not keyNumber then
-		key = "'" .. key .. "'"
-	end
-	local valueNumber = tonumber(value)
-	if not valueNumber then
-		value = "'" .. value .. "'"
-	end
-	db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. key .. ", " .. value .. ") ON DUPLICATE KEY UPDATE `value` = " .. value)
+	db.query("INSERT INTO `global_storage` (`key`, `value`) VALUES (" .. db.escapeString(tostring(key)) .. ", " .. db.escapeString(tostring(value)) .. ") ON CONFLICT (`key`) DO UPDATE SET `value` = EXCLUDED.`value`")
 end
 
 function Game.broadcastMessage(message, messageType)

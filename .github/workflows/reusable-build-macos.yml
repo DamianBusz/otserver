@@ -75,7 +75,8 @@ jobs:
         run: |
           set -euo pipefail
           brew update
-          brew install ccache pkg-config mono mysql
+          brew install ccache pkg-config mono postgresql@16
+          echo "$(brew --prefix postgresql@16)/bin" >> "$GITHUB_PATH"
           cmake --version
           ninja --version
           python --version
@@ -135,26 +136,22 @@ jobs:
           unset VCPKG_FORCE_SYSTEM_BINARIES
           cmake --build --preset macos-release
 
-      - name: Start MySQL
+      - name: Start PostgreSQL
         if: inputs.run_canary_smoke
         shell: bash
         run: |
           set -euo pipefail
-          brew services start mysql || mysql.server start
+          export PATH="$(brew --prefix postgresql@16)/bin:$PATH"
+          brew services start postgresql@16
           for _ in {1..60}; do
-            if mysqladmin ping -uroot --silent >/dev/null 2>&1; then
+            if pg_isready -d postgres >/dev/null 2>&1; then
               break
             fi
             sleep 2
           done
-          mysqladmin ping -uroot --silent
-          mysql -uroot -e "
-            CREATE USER IF NOT EXISTS 'canary_ci'@'localhost' IDENTIFIED BY 'root';
-            CREATE USER IF NOT EXISTS 'canary_ci'@'127.0.0.1' IDENTIFIED BY 'root';
-            GRANT ALL PRIVILEGES ON *.* TO 'canary_ci'@'localhost';
-            GRANT ALL PRIVILEGES ON *.* TO 'canary_ci'@'127.0.0.1';
-            FLUSH PRIVILEGES;
-          "
+          pg_isready -d postgres
+          psql --no-psqlrc -v ON_ERROR_STOP=1 -d postgres \
+            -c "CREATE ROLE canary_ci LOGIN CREATEDB PASSWORD 'root';"
 
       - name: Smoke test Canary datapack runtime
         if: inputs.run_canary_smoke
@@ -166,7 +163,7 @@ jobs:
             --data-pack data-canary \
             --map-name canary \
             --db-host 127.0.0.1 \
-            --db-port 3306 \
+            --db-port 5432 \
             --db-user canary_ci \
             --db-password root \
             --db-name canary_smoke_macos_canary \

@@ -131,9 +131,7 @@ if ($Lan) {
 		Stop-WithMessage "Could not detect a LAN IPv4 address. Edit docker/.env manually and set CANARY_SERVER_IP to the address other PCs can reach."
 	}
 
-	$myaacPort = Get-EnvValue -Path ".env" -Name "MYAAC_HTTP_PORT" -DefaultValue "8080"
 	Set-EnvValue -Path ".env" -Name "CANARY_SERVER_IP" -Value $lanIp
-	Set-EnvValue -Path ".env" -Name "MYAAC_SITE_URL" -Value "http://${lanIp}:${myaacPort}"
 	Write-Host "Configured docker/.env for LAN access at ${lanIp}."
 }
 

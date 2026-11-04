@@ -138,14 +138,8 @@ format_as(E e) {
 // Memory Mapped File
 #include <mio/mmap.hpp>
 
-// MySQL
-#if __has_include("<mysql.h>")
-	#include <mysql.h>
-#else
-	#include <mysql/mysql.h>
-#endif
-
-#include <mysql/errmsg.h>
+// PostgreSQL
+#include <libpq-fe.h>
 
 // Parallel Hash Map
 #include <parallel_hashmap/phmap.h>

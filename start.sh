@@ -15,6 +15,8 @@ fi
 
 ulimit -c unlimited
 set -o pipefail
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 while true; do
 	sleep 2

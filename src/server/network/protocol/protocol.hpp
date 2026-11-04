@@ -78,6 +78,15 @@ protected:
 	}
 
 	static bool RSA_decrypt(NetworkMessage &msg);
+	static bool isValidClientHandshake(uint32_t magic, uint16_t version) {
+		return magic == 0x4F545331 && version == 2;
+	}
+	static bool isValidClientChecksum(uint32_t first, uint32_t second);
+	static bool matchesClientChecksum(std::string_view allowedChecksums, uint32_t first, uint32_t second);
+	uint8_t decodeClientOpcode(uint8_t opcode) const {
+		const auto shift = static_cast<uint8_t>((key[0] ^ key[1] ^ key[2] ^ key[3]) % 255U + 1U);
+		return static_cast<uint8_t>(opcode - shift);
+	}
 
 	void setRawMessages(bool value) {
 		rawMessages = value;

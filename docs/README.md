@@ -29,7 +29,7 @@ Key characteristics:
 
 * C++20 core engine
 * Lua gameplay scripting
-* MariaDB/MySQL persistence
+* PostgreSQL persistence
 * Docker quickstart support for local testing and LAN demos
 * Automated testing
 * Metrics and observability
@@ -195,7 +195,7 @@ Maintenance
 
 * C++20
 * Lua
-* MariaDB / MySQL
+* PostgreSQL
 * CMake
 * vcpkg
 

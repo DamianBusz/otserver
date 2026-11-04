@@ -2,6 +2,7 @@
 	#include <array>
 	#include <exception>
 	#include <gtest/gtest.h>
+	#include <stdexcept>
 #endif
 
 #include "lib/logging/in_memory_logger.hpp"
@@ -45,16 +46,16 @@ TEST(RsaBackendTest, DecryptWithoutLoadedKeyKeepsBufferUnchanged) {
 	EXPECT_TRUE(logger.logs.empty());
 }
 
-TEST(RsaBackendTest, StartFallsBackToDefaultKeyWhenPemIsMissing) {
+TEST(RsaBackendTest, StartRejectsMissingPemWithoutInstallingFallbackKey) {
 	InMemoryLogger logger;
 	RSAManager rsa(logger);
 
-	rsa.start("non_existent_key.pem");
+	EXPECT_THROW(rsa.start("non_existent_key.pem"), std::runtime_error);
 
 	auto block = tests::rsa::FixedInput;
 	rsa.decrypt(reinterpret_cast<char*>(block.data()));
 
-	EXPECT_EQ(block, tests::rsa::ExpectedFixedOutput);
+	EXPECT_EQ(block, tests::rsa::FixedInput);
 	ASSERT_EQ(logger.logs.size(), 1u);
 	EXPECT_EQ(logger.logs[0].level, "error");
 }

@@ -26,7 +26,7 @@ dump_debug() {
 	echo "::endgroup::"
 
 	echo "::group::Docker compose logs"
-	"${COMPOSE[@]}" logs --no-color db server myaac login-server || true
+	"${COMPOSE[@]}" logs --no-color db server || true
 	echo "::endgroup::"
 }
 
@@ -45,63 +45,18 @@ on_exit() {
 	exit "${status}"
 }
 
-wait_for_http_status() {
-	local name="$1"
-	local url="$2"
-	local expected_status="$3"
-	local body_file
-
-	body_file="$(mktemp)"
-
+wait_for_server() {
 	for attempt in $(seq 1 120); do
-		local status
-		status="$(curl -sS -o "${body_file}" -w "%{http_code}" "${url}" || true)"
-
-		if [[ "${status}" == "${expected_status}" ]]; then
-			echo "${name} returned HTTP ${expected_status}"
-			rm -f "${body_file}"
+		if "${COMPOSE[@]}" logs --no-color server 2>&1 | grep -qi "server online!"; then
+			echo "Canary server is online"
 			return 0
 		fi
 
-		echo "Waiting for ${name}: expected ${expected_status}, got ${status} (attempt ${attempt}/120)"
+		echo "Waiting for Canary server (attempt ${attempt}/120)"
 		sleep 5
 	done
 
-	echo "${name} did not return HTTP ${expected_status}" >&2
-	cat "${body_file}" >&2 || true
-	rm -f "${body_file}"
-	return 1
-}
-
-wait_for_login_server() {
-	local response_file
-
-	response_file="$(mktemp)"
-
-	for attempt in $(seq 1 60); do
-		local status
-		status="$(
-			curl -sS -o "${response_file}" -w "%{http_code}" \
-				-H "Content-Type: application/json" \
-				-d '{"email":"@test1","password":"test","type":"login","clientversion":"1501"}' \
-				http://localhost:8088/login || true
-		)"
-
-		if [[ "${status}" == "200" ]] &&
-			grep -q '"worlds"' "${response_file}" &&
-			grep -q 'Rook Noob 1' "${response_file}"; then
-			echo "login-server returned the seeded test account"
-			rm -f "${response_file}"
-			return 0
-		fi
-
-		echo "Waiting for login-server: got HTTP ${status} (attempt ${attempt}/60)"
-		sleep 5
-	done
-
-	echo "login-server did not return the seeded test account" >&2
-	cat "${response_file}" >&2 || true
-	rm -f "${response_file}"
+	echo "Canary server did not become online" >&2
 	return 1
 }
 
@@ -111,23 +66,21 @@ cleanup
 
 "${COMPOSE[@]}" config >/tmp/canary-docker-compose.yml
 if [[ -n "${CANARY_IMAGE_TAR:-}" ]]; then
-	"${COMPOSE[@]}" pull db login-server
+	"${COMPOSE[@]}" pull db
 else
-	"${COMPOSE[@]}" pull db server login-server
+	"${COMPOSE[@]}" pull db server
 fi
-"${COMPOSE[@]}" up -d --build
+"${COMPOSE[@]}" up -d
 
-wait_for_http_status "MyAAC home" "http://localhost:8080/" "200"
-wait_for_http_status "MyAAC login.php" "http://localhost:8080/login.php" "404"
-
-"${COMPOSE[@]}" exec -T myaac test ! -f /var/www/html/login.php
+wait_for_server
 
 "${COMPOSE[@]}" exec -T server sh -lc '
-	grep -q "mysqlHost = \"db\"" config.lua &&
-	grep -q "mysqlDatabase = \"canary\"" config.lua &&
+	grep -q "postgresHost = \"db\"" config.lua &&
+	grep -q "postgresDatabase = \"canary\"" config.lua &&
 	grep -q "loginProtocolPort = 7171" config.lua &&
 	grep -q "gameProtocolPort = 7172" config.lua &&
 	grep -q "statusProtocolPort = 7173" config.lua
 '
 
-wait_for_login_server
+"${COMPOSE[@]}" exec -T db psql --no-psqlrc -v ON_ERROR_STOP=1 \
+	-U canary -d canary -tAc "SELECT count(*) > 0 FROM accounts;" | grep -q '^t$'

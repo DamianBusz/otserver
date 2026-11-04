@@ -39,7 +39,7 @@ public:
 	/**
 	 * @brief Inserts or updates a batch of storage entries for a player.
 	 *
-	 * Builds a single bulk INSERT ... ON DUPLICATE KEY UPDATE query to
+	 * Builds a single bulk INSERT ... ON CONFLICT DO UPDATE query to
 	 * ensure new keys are inserted and existing ones updated in-place.
 	 *
 	 * @param playerId Player GUID.

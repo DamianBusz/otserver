@@ -87,26 +87,22 @@ The fastest way to start local testing is using the Docker quickstart.
 Services provided:
 
 * Canary
-* MariaDB
-* MyAAC
-* Login Server
+* PostgreSQL 16
 
 Start the stack:
 
 ```bash
 cd docker
 cp .env.dist .env
-docker compose up -d --build
+docker compose up -d
 ```
 
-This pulls the published Canary runtime image and builds the MyAAC quickstart
-image. It does not compile Canary locally.
+This pulls the published Canary runtime image. It does not compile Canary
+locally.
 
 Default endpoints:
 
 ```text
-Website:                 http://localhost:8080
-Client login API:        http://localhost:8088/login
 Canary login protocol:   7171
 Canary game protocol:    7172
 Canary status protocol:  7173
@@ -172,9 +168,9 @@ Important settings:
 ```lua
 serverName = "Development Server"
 ip = "127.0.0.1"
-mysqlHost = "localhost"
-mysqlUser = "root"
-mysqlPass = "password"
+postgresHost = "localhost"
+postgresUser = "postgres"
+postgresPass = "password"
 ```
 
 Never commit personal configuration changes.
@@ -239,7 +235,7 @@ Examples:
 
 * asio
 * curl
-* libmariadb
+* libpq
 * LuaJIT
 * mbedtls
 * protobuf
@@ -296,7 +292,7 @@ schema.sql
 Import:
 
 ```bash
-mysql -u root -p database_name < schema.sql
+psql -U postgres -d database_name -f schema.sql
 ```
 
 Main tables:

@@ -113,7 +113,7 @@ foreach(
                pugixml::pugixml
                spdlog::spdlog
                unofficial::argon2::libargon2
-               unofficial::libmariadb
+               PostgreSQL::PostgreSQL
                nlohmann_json::nlohmann_json
                protobuf
     )
@@ -141,12 +141,7 @@ foreach(
         )
     endif()
 
-    if(MSVC)
-        target_link_libraries(
-            ${core_target}
-            PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIBS}
-        )
-    else()
+    if(NOT MSVC)
         target_link_libraries(
             ${core_target}
             PUBLIC Threads::Threads

@@ -1926,7 +1926,7 @@ void PlayerWheel::loadDBPlayerSlotPointsOnLogin() {
 
 bool PlayerWheel::saveDBPlayerSlotPointsOnLogout() const {
 	DBInsert insertWheelData("INSERT INTO `player_wheeldata` (`player_id`, `slot`) VALUES ");
-	insertWheelData.upsert({ "slot" });
+	insertWheelData.upsert({ "player_id" }, { "slot" });
 	PropWriteStream stream;
 	const auto wheelSlots = getSlots();
 	for (uint8_t i = 1; i < wheelSlots.size(); ++i) {

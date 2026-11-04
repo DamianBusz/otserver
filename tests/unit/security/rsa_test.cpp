@@ -10,6 +10,10 @@
 #include "lib/logging/in_memory_logger.hpp"
 #include "security/rsa.hpp"
 
+#ifndef USE_PRECOMPILED_HEADERS
+	#include <stdexcept>
+#endif
+
 class RSATest : public ::testing::Test {
 protected:
 	static void SetUpTestSuite() {
@@ -36,15 +40,15 @@ private:
 	inline static InMemoryLogger* logger { nullptr };
 };
 
-TEST_F(RSATest, StartLogsErrorForMissingPemFile) {
-	DI::create<RSAManager &>().start("non_existent_key.pem");
+TEST_F(RSATest, StartRejectsMissingPemFile) {
+	EXPECT_THROW(DI::create<RSAManager &>().start("non_existent_key.pem"), std::runtime_error);
 
 	auto &logger = testLogger();
 
 	ASSERT_EQ(1u, logger.logs.size());
 	EXPECT_EQ(std::string { "error" }, logger.logs[0].level);
 	EXPECT_EQ(
-		fmt::format("File non_existent_key.pem not found or valid... Setting standard rsa key\n"),
+		fmt::format("RSA key file non_existent_key.pem was not found or is invalid; aborting startup"),
 		logger.logs[0].message
 	);
 }

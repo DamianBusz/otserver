@@ -27,53 +27,28 @@ namespace InternalDBManager {
 }
 
 bool DatabaseManager::optimizeTables() {
-	Database &db = Database::getInstance();
-	std::ostringstream query;
-
-	query << "SELECT `TABLE_NAME` FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = " << db.escapeString(g_configManager().getString(MYSQL_DB)) << " AND `DATA_FREE` > 0";
-	DBResult_ptr result = db.storeQuery(query.str());
-	if (!result) {
-		return false;
-	}
-
-	do {
-		std::string tableName = result->getString("TABLE_NAME");
-
-		query.str(std::string());
-		query << "OPTIMIZE TABLE `" << tableName << '`';
-
-		std::string tableResult;
-		if (db.executeQuery(query.str())) {
-			tableResult = "[Success]";
-		} else {
-			tableResult = "[Failed]";
-		}
-
-		g_logger().info("Optimizing table {}... {}", tableName, tableResult);
-	} while (result->next());
-
-	return true;
+	return Database::getInstance().executeQuery("ANALYZE");
 }
 
 bool DatabaseManager::tableExists(const std::string &tableName) {
 	Database &db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `TABLE_NAME` FROM `information_schema`.`tables` WHERE `TABLE_SCHEMA` = " << db.escapeString(g_configManager().getString(MYSQL_DB)) << " AND `TABLE_NAME` = " << db.escapeString(tableName) << " LIMIT 1";
+	query << "SELECT `table_name` FROM `information_schema`.`tables` WHERE `table_schema` = current_schema() AND `table_name` = " << db.escapeString(tableName) << " LIMIT 1";
 	return db.storeQuery(query.str()).get() != nullptr;
 }
 
 bool DatabaseManager::isDatabaseSetup() {
 	Database &db = Database::getInstance();
 	std::ostringstream query;
-	query << "SELECT `TABLE_NAME` FROM `information_schema`.`tables` WHERE `TABLE_SCHEMA` = " << db.escapeString(g_configManager().getString(MYSQL_DB));
+	query << "SELECT `table_name` FROM `information_schema`.`tables` WHERE `table_schema` = current_schema()";
 	return db.storeQuery(query.str()).get() != nullptr;
 }
 
 int32_t DatabaseManager::getDatabaseVersion() {
 	if (!tableExists("server_config")) {
 		Database &db = Database::getInstance();
-		db.executeQuery("CREATE TABLE `server_config` (`config` VARCHAR(50) NOT NULL, `value` VARCHAR(256) NOT NULL DEFAULT '', UNIQUE(`config`)) ENGINE = InnoDB");
+		db.executeQuery("CREATE TABLE `server_config` (`config` VARCHAR(50) PRIMARY KEY, `value` VARCHAR(256) NOT NULL DEFAULT '')");
 		db.executeQuery("INSERT INTO `server_config` VALUES ('db_version', 0)");
 		return 0;
 	}

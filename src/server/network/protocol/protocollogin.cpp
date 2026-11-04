@@ -231,6 +231,21 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage &msg) {
 	}
 
 	std::array<uint32_t, 4> key = { msg.get<uint32_t>(), msg.get<uint32_t>(), msg.get<uint32_t>(), msg.get<uint32_t>() };
+	const auto handshakeMagic = msg.get<uint32_t>();
+	const auto handshakeVersion = msg.get<uint16_t>();
+	if (!isValidClientHandshake(handshakeMagic, handshakeVersion)) {
+		g_logger().warn("[ProtocolLogin::onRecvFirstMessage] - Invalid custom client handshake");
+		disconnect();
+		return;
+	}
+	const auto checksumFirst = msg.get<uint32_t>();
+	const auto checksumSecond = msg.get<uint32_t>();
+	if (!isValidClientChecksum(checksumFirst, checksumSecond)) {
+		g_logger().warn("[ProtocolLogin::onRecvFirstMessage] - Invalid custom client checksum");
+		disconnect();
+		return;
+	}
+
 	enableXTEAEncryption();
 	setXTEAKey(key.data());
 

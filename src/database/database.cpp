@@ -17,11 +17,44 @@
 #include <iterator>
 
 #ifndef USE_PRECOMPILED_HEADERS
+	#include <cassert>
 	#include <fmt/format.h>
 	#include <string_view>
 #endif
 
 namespace {
+	// shortcut: legacy queries use standard single-quoted literals; replace this when dollar-quoted SQL is introduced.
+	std::string normalizePostgreSQLQuery(std::string_view query) {
+		std::string normalized(query);
+		bool inString = false;
+		for (size_t i = 0; i < normalized.size(); ++i) {
+			if (normalized[i] == '\'' && inString && i + 1 < normalized.size() && normalized[i + 1] == '\'') {
+				++i;
+				continue;
+			}
+			if (normalized[i] == '\'') {
+				inString = !inString;
+			} else if (normalized[i] == '`' && !inString) {
+				normalized[i] = '"';
+			}
+		}
+		return normalized;
+	}
+
+#ifndef NDEBUG
+	[[maybe_unused]] const bool queryNormalizerValidated = [] {
+		assert(normalizePostgreSQLQuery("SELECT `id`, 'keep `literal` and it''s quoted'") == "SELECT \"id\", 'keep `literal` and it''s quoted'");
+		return true;
+	}();
+#endif
+
+	bool isSuccessfulResult(const PGresult* result) {
+		if (!result) {
+			return false;
+		}
+		const auto status = PQresultStatus(result);
+		return status == PGRES_COMMAND_OK || status == PGRES_TUPLES_OK;
+	}
 
 	void appendInsertBaseQuery(std::string &sql, std::string_view baseQuery, bool baseHasSpace) {
 		sql += baseQuery;
@@ -34,7 +67,7 @@ namespace {
 
 Database::~Database() {
 	if (handle != nullptr) {
-		mysql_close(handle);
+		PQfinish(handle);
 	}
 }
 
@@ -43,44 +76,35 @@ Database &Database::getInstance() {
 }
 
 bool Database::connect() {
-	return connect(&g_configManager().getString(MYSQL_HOST), &g_configManager().getString(MYSQL_USER), &g_configManager().getString(MYSQL_PASS), &g_configManager().getString(MYSQL_DB), g_configManager().getNumber(SQL_PORT), &g_configManager().getString(MYSQL_SOCK));
+	return connect(&g_configManager().getString(POSTGRES_HOST), &g_configManager().getString(POSTGRES_USER), &g_configManager().getString(POSTGRES_PASS), &g_configManager().getString(POSTGRES_DB), g_configManager().getNumber(POSTGRES_PORT), &g_configManager().getString(POSTGRES_SOCK));
 }
 
 bool Database::connect(const std::string* host, const std::string* user, const std::string* password, const std::string* database, uint32_t port, const std::string* sock) {
-	// connection handle initialization
-	handle = mysql_init(nullptr);
-	if (!handle) {
-		g_logger().error("Failed to initialize MySQL connection handle.");
+	if (host->empty() || user->empty() || database->empty() || port == 0) {
+		g_logger().warn("PostgreSQL host, user, database or port not provided");
+	}
+
+	const auto portString = std::to_string(port);
+	const char* keywords[] = { "host", "port", "user", "password", "dbname", nullptr };
+	const char* values[] = { sock->empty() ? host->c_str() : sock->c_str(), portString.c_str(), user->c_str(), password->c_str(), database->c_str(), nullptr };
+	if (handle) {
+		PQfinish(handle);
+		handle = nullptr;
+	}
+	handle = PQconnectdbParams(keywords, values, 0);
+	if (!handle || PQstatus(handle) != CONNECTION_OK) {
+		g_logger().error("PostgreSQL connection failed: {}", handle ? PQerrorMessage(handle) : "unable to allocate connection");
 		return false;
 	}
-
-	if (host->empty() || user->empty() || password->empty() || database->empty() || port <= 0) {
-		g_logger().warn("MySQL host, user, password, database or port not provided");
-	}
-
-	// automatic reconnect
-	bool reconnect = true;
-	mysql_options(handle, MYSQL_OPT_RECONNECT, &reconnect);
-
-	// Remove ssl verification
-	bool ssl_enabled = false;
-	mysql_options(handle, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &ssl_enabled);
-
-	// connects to database
-	if (!mysql_real_connect(handle, host->c_str(), user->c_str(), password->c_str(), database->c_str(), port, sock->c_str(), 0)) {
-		g_logger().error("MySQL Error Message: {}", mysql_error(handle));
+	if (PQsetClientEncoding(handle, "UTF8") != 0) {
+		g_logger().error("Failed to set PostgreSQL client encoding: {}", PQerrorMessage(handle));
 		return false;
-	}
-
-	DBResult_ptr result = storeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
-	if (result) {
-		maxPacketSize = result->getNumber<uint64_t>("Value");
 	}
 	return true;
 }
 
 void Database::createDatabaseBackup(bool compress) const {
-	if (!g_configManager().getBoolean(MYSQL_DB_BACKUP)) {
+	if (!g_configManager().getBoolean(POSTGRES_DB_BACKUP)) {
 		return;
 	}
 
@@ -94,32 +118,34 @@ void Database::createDatabaseBackup(bool compress) const {
 	std::filesystem::create_directories(backupDir);
 	std::string backupFileName = fmt::format("{}backup_{}.sql", backupDir, formattedTime);
 
-	// Create a temporary configuration file for MySQL credentials
-	std::string tempConfigFile = "database_backup.cnf";
+	// Keep credentials out of the command line.
+	std::string tempConfigFile = "database_backup.conf";
 	std::ofstream configFile(tempConfigFile);
 	if (configFile.is_open()) {
-		configFile << "[client]\n";
-		configFile << "user=\"" << g_configManager().getString(MYSQL_USER) << "\"\n";
-		configFile << "password=\"" << g_configManager().getString(MYSQL_PASS) << "\"\n";
-		configFile << "host=" << g_configManager().getString(MYSQL_HOST) << "\n";
-		configFile << "port=" << g_configManager().getNumber(SQL_PORT) << "\n";
+		configFile << "[canary_backup]\n";
+		configFile << "host=" << g_configManager().getString(POSTGRES_HOST) << "\n";
+		configFile << "port=" << g_configManager().getNumber(POSTGRES_PORT) << "\n";
+		configFile << "user=" << g_configManager().getString(POSTGRES_USER) << "\n";
+		configFile << "password=" << g_configManager().getString(POSTGRES_PASS) << "\n";
+		configFile << "dbname=" << g_configManager().getString(POSTGRES_DB) << "\n";
 		configFile.close();
+		std::filesystem::permissions(tempConfigFile, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write, std::filesystem::perm_options::replace);
 	} else {
-		g_logger().error("Failed to create temporary MySQL configuration file.");
+		g_logger().error("Failed to create temporary PostgreSQL service file.");
 		return;
 	}
 
-	// Execute mysqldump command to create backup file
+	// Execute pg_dump using the fixed service and output paths.
 	std::string command = fmt::format(
-		"mysqldump --defaults-extra-file={} {} > {}",
-		tempConfigFile, g_configManager().getString(MYSQL_DB), backupFileName
+		"PGSERVICEFILE={} pg_dump --file={} service=canary_backup",
+		tempConfigFile, backupFileName
 	);
 
 	int result = std::system(command.c_str());
 	std::filesystem::remove(tempConfigFile);
 
 	if (result != 0) {
-		g_logger().error("Failed to create database backup using mysqldump.");
+		g_logger().error("Failed to create database backup using pg_dump.");
 		return;
 	}
 
@@ -192,11 +218,14 @@ bool Database::rollback() {
 		return false;
 	}
 
-	if (mysql_rollback(handle) != 0) {
-		g_logger().error("Message: {}", mysql_error(handle));
+	PGresult* result = PQexec(handle, "ROLLBACK");
+	if (!isSuccessfulResult(result)) {
+		g_logger().error("PostgreSQL rollback failed: {}", PQerrorMessage(handle));
+		PQclear(result);
 		databaseLock.unlock();
 		return false;
 	}
+	PQclear(result);
 
 	databaseLock.unlock();
 	return true;
@@ -207,36 +236,51 @@ bool Database::commit() {
 		g_logger().error("Database not initialized!");
 		return false;
 	}
-	if (mysql_commit(handle) != 0) {
-		g_logger().error("Message: {}", mysql_error(handle));
+	PGresult* result = PQexec(handle, "COMMIT");
+	if (!isSuccessfulResult(result)) {
+		g_logger().error("PostgreSQL commit failed: {}", PQerrorMessage(handle));
+		PQclear(result);
 		databaseLock.unlock();
 		return false;
 	}
+	PQclear(result);
 
 	databaseLock.unlock();
 	return true;
 }
 
-bool Database::isRecoverableError(unsigned int error) {
-	return error == CR_SERVER_LOST || error == CR_SERVER_GONE_ERROR || error == CR_CONN_HOST_ERROR || error == 1053 /*ER_SERVER_SHUTDOWN*/ || error == CR_CONNECTION_ERROR;
+bool Database::isRecoverableError(const PGresult* result, const PGconn* connection) {
+	if (!connection || PQstatus(connection) != CONNECTION_OK) {
+		return true;
+	}
+	const char* sqlState = result ? PQresultErrorField(result, PG_DIAG_SQLSTATE) : nullptr;
+	return sqlState && sqlState[0] == '0' && sqlState[1] == '8';
 }
 
 bool Database::retryQuery(std::string_view query, int retries) {
-	while (retries > 0 && mysql_query(handle, query.data()) != 0) {
+	const auto normalizedQuery = normalizePostgreSQLQuery(query);
+	for (int attempt = 0; attempt < retries; ++attempt) {
+		PGresult* result = PQexec(handle, normalizedQuery.c_str());
+		if (isSuccessfulResult(result)) {
+			PQclear(result);
+			return true;
+		}
+
 		g_logger().error("Query: {}", query.substr(0, 256));
-		g_logger().error("MySQL error [{}]: {}", mysql_errno(handle), mysql_error(handle));
-		if (!isRecoverableError(mysql_errno(handle))) {
+		g_logger().error("PostgreSQL error: {}", PQerrorMessage(handle));
+		const bool recoverable = isRecoverableError(result, handle);
+		PQclear(result);
+		if (!recoverable) {
 			return false;
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		retries--;
-	}
-	if (retries == 0) {
-		g_logger().error("Query {} failed after {} retries.", query, 10);
-		return false;
-	}
 
-	return true;
+		PQreset(handle);
+		if (PQstatus(handle) != CONNECTION_OK) {
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	}
+	g_logger().error("Query {} failed after {} retries.", query, retries);
+	return false;
 }
 
 bool Database::executeQuery(std::string_view query) {
@@ -252,10 +296,7 @@ bool Database::executeQuery(std::string_view query) {
 	measureLock.stop();
 
 	metrics::query_latency measure(query.substr(0, 50));
-	bool success = retryQuery(query, 10);
-	mysql_free_result(mysql_store_result(handle));
-
-	return success;
+	return retryQuery(query, 10);
 }
 
 DBResult_ptr Database::storeQuery(std::string_view query) {
@@ -270,37 +311,43 @@ DBResult_ptr Database::storeQuery(std::string_view query) {
 	measureLock.stop();
 
 	metrics::query_latency measure(query.substr(0, 50));
-retry:
-	if (mysql_query(handle, query.data()) != 0) {
-		g_logger().error("Query: {}", query);
-		g_logger().error("Message: {}", mysql_error(handle));
-		if (!isRecoverableError(mysql_errno(handle))) {
-			return nullptr;
+	const auto normalizedQuery = normalizePostgreSQLQuery(query);
+	for (int attempt = 0; attempt < 10; ++attempt) {
+		PGresult* result = PQexec(handle, normalizedQuery.c_str());
+		if (result && PQresultStatus(result) == PGRES_TUPLES_OK) {
+			if (PQntuples(result) == 0) {
+				PQclear(result);
+				return nullptr;
+			}
+			return std::make_shared<DBResult>(result);
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		goto retry;
-	}
 
-	// Retrieving results of query
-	MYSQL_RES* res = mysql_store_result(handle);
-	if (res != nullptr) {
-		DBResult_ptr result = std::make_shared<DBResult>(res);
-		if (!result->hasNext()) {
+		g_logger().error("Query: {}", query);
+		g_logger().error("PostgreSQL error: {}", PQerrorMessage(handle));
+		const bool recoverable = isRecoverableError(result, handle);
+		PQclear(result);
+		if (!recoverable) {
 			return nullptr;
 		}
-		return result;
+		PQreset(handle);
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 	return nullptr;
 }
 
 std::string Database::escapeString(const std::string &s) const {
-	std::string::size_type len = s.length();
-	auto length = static_cast<uint32_t>(len);
-	std::string escaped = escapeBlob(s.c_str(), length);
-	if (escaped.empty()) {
-		g_logger().warn("Error escaping string");
+	metrics::lock_latency measureLock("database");
+	std::scoped_lock lock { databaseLock };
+	measureLock.stop();
+
+	char* escaped = PQescapeLiteral(handle, s.data(), s.size());
+	if (!escaped) {
+		g_logger().error("Failed to escape PostgreSQL string: {}", PQerrorMessage(handle));
+		return "''";
 	}
-	return escaped;
+	std::string result(escaped);
+	PQfreemem(escaped);
+	return result;
 }
 
 std::string Database::escapeBlob(const char* s, uint32_t length) const {
@@ -308,37 +355,35 @@ std::string Database::escapeBlob(const char* s, uint32_t length) const {
 	std::scoped_lock lock { databaseLock };
 	measureLock.stop();
 
-	size_t maxLength = (length * 2) + 1;
-
-	std::string escaped;
-	escaped.reserve(maxLength + 2);
-	escaped.push_back('\'');
-
-	if (length != 0) {
-		std::string output(maxLength, '\0');
-		size_t escapedLength = mysql_real_escape_string(handle, &output[0], s, length);
-		output.resize(escapedLength);
-		escaped.append(output);
+	size_t escapedLength = 0;
+	unsigned char* escaped = PQescapeByteaConn(handle, reinterpret_cast<const unsigned char*>(s), length, &escapedLength);
+	if (!escaped) {
+		g_logger().error("Failed to escape PostgreSQL bytea: {}", PQerrorMessage(handle));
+		return "''";
 	}
-
-	escaped.push_back('\'');
-	return escaped;
+	std::string result("'");
+	result.append(reinterpret_cast<const char*>(escaped), escapedLength - 1);
+	result.push_back('\'');
+	PQfreemem(escaped);
+	return result;
 }
 
-DBResult::DBResult(MYSQL_RES* res) {
+uint64_t Database::getLastInsertId() {
+	auto result = storeQuery("SELECT lastval() AS id");
+	return result ? result->getNumber<uint64_t>("id") : 0;
+}
+
+DBResult::DBResult(PGresult* res) {
 	handle = res;
 
-	int num_fields = mysql_num_fields(handle);
-
-	const MYSQL_FIELD* fields = mysql_fetch_fields(handle);
-	for (size_t i = 0; i < num_fields; i++) {
-		listNames[fields[i].name] = i;
+	const int fieldCount = PQnfields(handle);
+	for (int i = 0; i < fieldCount; ++i) {
+		listNames[PQfname(handle, i)] = static_cast<size_t>(i);
 	}
-	row = mysql_fetch_row(handle);
 }
 
 DBResult::~DBResult() {
-	mysql_free_result(handle);
+	PQclear(handle);
 }
 
 std::string DBResult::getString(const std::string &s) const {
@@ -347,10 +392,11 @@ std::string DBResult::getString(const std::string &s) const {
 		g_logger().error("Column '{}' does not exist in result set", s);
 		return {};
 	}
-	if (row[it->second] == nullptr) {
+	const int column = static_cast<int>(it->second);
+	if (PQgetisnull(handle, rowIndex, column)) {
 		return {};
 	}
-	return std::string(row[it->second]);
+	return std::string(PQgetvalue(handle, rowIndex, column), static_cast<size_t>(PQgetlength(handle, rowIndex, column)));
 }
 
 const char* DBResult::getStream(const std::string &s, unsigned long &size) const {
@@ -361,13 +407,30 @@ const char* DBResult::getStream(const std::string &s, unsigned long &size) const
 		return nullptr;
 	}
 
-	if (row[it->second] == nullptr) {
+	const int column = static_cast<int>(it->second);
+	if (PQgetisnull(handle, rowIndex, column)) {
 		size = 0;
 		return nullptr;
 	}
 
-	size = mysql_fetch_lengths(handle)[it->second];
-	return row[it->second];
+	if (PQftype(handle, column) != 17) { // bytea
+		size = static_cast<unsigned long>(PQgetlength(handle, rowIndex, column));
+		return PQgetvalue(handle, rowIndex, column);
+	}
+
+	auto &value = binaryValues[it->second];
+	if (value.empty()) {
+		size_t decodedLength = 0;
+		unsigned char* decoded = PQunescapeBytea(reinterpret_cast<const unsigned char*>(PQgetvalue(handle, rowIndex, column)), &decodedLength);
+		if (!decoded) {
+			size = 0;
+			return nullptr;
+		}
+		value.assign(reinterpret_cast<const char*>(decoded), decodedLength);
+		PQfreemem(decoded);
+	}
+	size = static_cast<unsigned long>(value.size());
+	return value.data();
 }
 
 uint8_t DBResult::getU8FromString(const std::string &string, const std::string &function) {
@@ -391,11 +454,11 @@ int8_t DBResult::getInt8FromString(const std::string &string, const std::string 
 }
 
 size_t DBResult::countResults() const {
-	return static_cast<size_t>(mysql_num_rows(handle));
+	return static_cast<size_t>(PQntuples(handle));
 }
 
 bool DBResult::hasNext() const {
-	return row != nullptr;
+	return rowIndex < PQntuples(handle);
 }
 
 bool DBResult::next() {
@@ -403,8 +466,9 @@ bool DBResult::next() {
 		g_logger().error("Database not initialized!");
 		return false;
 	}
-	row = mysql_fetch_row(handle);
-	return row != nullptr;
+	++rowIndex;
+	binaryValues.clear();
+	return hasNext();
 }
 
 DBInsert::DBInsert(std::string insertQuery) :
@@ -450,8 +514,9 @@ bool DBInsert::addRow(std::ostringstream &row) {
 	return ret;
 }
 
-void DBInsert::upsert(const std::vector<std::string> &columns) {
-	upsertColumns = columns;
+void DBInsert::upsert(const std::vector<std::string> &newConflictColumns, const std::vector<std::string> &updateColumns) {
+	conflictColumns = newConflictColumns;
+	upsertColumns = updateColumns;
 }
 
 bool DBInsert::execute() {
@@ -464,15 +529,25 @@ bool DBInsert::execute() {
 
 	if (!upsertColumns.empty()) {
 		size_t estimatedSize = 32;
+		for (const auto &column : conflictColumns) {
+			estimatedSize += column.size() + 4;
+		}
 		for (const auto &column : upsertColumns) {
 			estimatedSize += (column.size() * 2) + 16;
 		}
 
 		upsertQuery.reserve(estimatedSize);
-		upsertQuery += " ON DUPLICATE KEY UPDATE ";
+		upsertQuery += " ON CONFLICT (";
 		auto upsertOutput = std::back_inserter(upsertQuery);
+		for (size_t i = 0; i < conflictColumns.size(); ++i) {
+			upsertOutput = fmt::format_to(upsertOutput, "`{}`", conflictColumns[i]);
+			if (i + 1 < conflictColumns.size()) {
+				upsertQuery += ", ";
+			}
+		}
+		upsertQuery += ") DO UPDATE SET ";
 		for (size_t i = 0; i < upsertColumns.size(); ++i) {
-			upsertOutput = fmt::format_to(upsertOutput, "`{0}` = VALUES(`{0}`)", upsertColumns[i]);
+			upsertOutput = fmt::format_to(upsertOutput, "`{0}` = EXCLUDED.`{0}`", upsertColumns[i]);
 			if (i + 1 < upsertColumns.size()) {
 				upsertQuery.push_back(',');
 				upsertQuery.push_back(' ');

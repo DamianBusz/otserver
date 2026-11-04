@@ -1258,6 +1258,20 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage &msg) {
 		msg.get<uint32_t>(),
 		msg.get<uint32_t>()
 	};
+	const auto handshakeMagic = msg.get<uint32_t>();
+	const auto handshakeVersion = msg.get<uint16_t>();
+	if (!isValidClientHandshake(handshakeMagic, handshakeVersion)) {
+		g_logger().warn("[ProtocolGame::onRecvFirstMessage] - Invalid custom client handshake");
+		disconnect();
+		return;
+	}
+	const auto checksumFirst = msg.get<uint32_t>();
+	const auto checksumSecond = msg.get<uint32_t>();
+	if (!isValidClientChecksum(checksumFirst, checksumSecond)) {
+		g_logger().warn("[ProtocolGame::onRecvFirstMessage] - Invalid custom client checksum");
+		disconnect();
+		return;
+	}
 
 	enableXTEAEncryption();
 	setXTEAKey(key.data());
@@ -1536,7 +1550,7 @@ void ProtocolGame::parsePacket(NetworkMessage &msg) {
 		return;
 	}
 
-	uint8_t recvbyte = msg.getByte();
+	const uint8_t recvbyte = decodeClientOpcode(msg.getByte());
 
 	// Silence ping/pong: 0x1D = pingBack, 0x1E = ping [TRACKS CLIENT BYTES]
 	if (recvbyte != 0x1D && recvbyte != 0x1E) {
