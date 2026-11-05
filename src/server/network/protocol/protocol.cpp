@@ -25,10 +25,19 @@ Protocol::Protocol(const Connection_ptr &initConnection) :
 }
 
 bool Protocol::isValidClientChecksum(const uint32_t first, const uint32_t second) {
-	return matchesClientChecksum(g_configManager().getString(CUSTOM_CLIENT_CHECKSUM), first, second);
+	return acceptsClientChecksum(
+		g_configManager().getBoolean(VALIDATE_CUSTOM_CLIENT_CHECKSUM),
+		g_configManager().getString(CUSTOM_CLIENT_CHECKSUM),
+		first,
+		second
+	);
 }
 
-bool Protocol::matchesClientChecksum(const std::string_view allowedChecksums, const uint32_t first, const uint32_t second) {
+bool Protocol::acceptsClientChecksum(const bool validationEnabled, const std::string_view allowedChecksums, const uint32_t first, const uint32_t second) {
+	if (!validationEnabled) {
+		return true;
+	}
+
 	const auto received = fmt::format("{:08x}{:08x}", first, second);
 	for (const auto &allowed : split(std::string(allowedChecksums))) {
 		if (asLowerCaseString(allowed) == received) {

@@ -466,7 +466,8 @@ parallelism = 2
 
 -- Session Auth
 authType = "password" -- 'session' | 'password'
--- Required for packed clients. Accepts comma-separated packer values; empty rejects every client.
+-- Keep validation enabled in production. Checksums from every distributed client build may be comma-separated.
+validateCustomClientChecksum = true
 customClientChecksum = ""
 resetSessionsOnStartup = false
 

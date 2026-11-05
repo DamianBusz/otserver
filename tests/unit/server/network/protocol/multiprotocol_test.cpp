@@ -43,8 +43,8 @@ namespace {
 			return decodeClientOpcode(opcode);
 		}
 
-		static bool acceptsClientChecksum(std::string_view allowed, uint32_t first, uint32_t second) {
-			return matchesClientChecksum(allowed, first, second);
+		static bool acceptsConfiguredClientChecksum(bool validationEnabled, std::string_view allowed, uint32_t first, uint32_t second) {
+			return acceptsClientChecksum(validationEnabled, allowed, first, second);
 		}
 	};
 
@@ -80,10 +80,15 @@ TEST(ConnectionTransportTest, CustomClientOpcodeShiftIsSessionKeyDerivedAndRever
 }
 
 TEST(ConnectionTransportTest, CustomClientChecksumMustMatchConfiguredBuild) {
-	EXPECT_TRUE(CurrentTransportProtocol::acceptsClientChecksum("0123456789abcdef", 0x01234567, 0x89ABCDEF));
-	EXPECT_TRUE(CurrentTransportProtocol::acceptsClientChecksum("fedcba9876543210, 0123456789ABCDEF", 0x01234567, 0x89ABCDEF));
-	EXPECT_FALSE(CurrentTransportProtocol::acceptsClientChecksum("", 0x01234567, 0x89ABCDEF));
-	EXPECT_FALSE(CurrentTransportProtocol::acceptsClientChecksum("0123456789abcdee", 0x01234567, 0x89ABCDEF));
+	constexpr std::string_view allowedChecksums = "0123456789abcdef, fedcba9876543210, AABBCCDDEEFF0011";
+
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "0123456789abcdef", 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0xFEDCBA98, 0x76543210));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0xAABBCCDD, 0xEEFF0011));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "", 0x01234567, 0x89ABCDEF));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "0123456789abcdee", 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(false, "", 0x01234567, 0x89ABCDEF));
 }
 
 TEST(ProtocolProfileRegistryTest, Version860ProfilesAreDifferentProfiles) {
