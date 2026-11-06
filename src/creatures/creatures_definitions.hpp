@@ -1727,6 +1727,17 @@ struct LightInfo {
 class Party;
 enum class HealingKind : uint8_t { Primary, SharedConservation, HealingLink };
 
+// The first 25 analyser counter slots preserve the numeric charm rune IDs.
+enum class MiscAnalyserCounter : uint8_t {
+	CriticalHit = 25,
+	ManaGain,
+	LifeGain,
+	Onslaught,
+	Ruse,
+	Momentum,
+	Transcendence
+};
+
 struct CombatDamage {
 	struct {
 		CombatType_t type = COMBAT_NONE;
@@ -1739,6 +1750,7 @@ struct CombatDamage {
 	int affected = 1;
 	bool extension = false;
 	bool suppressCharms = false;
+	uint32_t miscCharmProcs = 0;
 	bool attackReductionResolved = false;
 	uint8_t attackReductionPercent = 0;
 	std::string exString;

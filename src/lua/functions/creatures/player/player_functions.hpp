@@ -29,6 +29,7 @@ class PlayerFunctions {
 	static int luaPlayerAddMinorCharmEchoes(lua_State* L);
 	static int luaPlayerGetCharmTier(lua_State* L);
 	static int luaPlayerGetCharmChance(lua_State* L);
+	static int luaPlayerRecordCharmProc(lua_State* L);
 	static int luaPlayerResetOldCharms(lua_State* L);
 	static int luaPlayerIsPlayer(lua_State* L);
 
@@ -213,11 +214,13 @@ class PlayerFunctions {
 	static int luaPlayerRemoveOutfit(lua_State* L);
 	static int luaPlayerRemoveOutfitAddon(lua_State* L);
 	static int luaPlayerHasOutfit(lua_State* L);
+	static int luaPlayerGetOwnedOutfitAddons(lua_State* L);
 	static int luaPlayerSendOutfitWindow(lua_State* L);
 
 	static int luaPlayerAddMount(lua_State* L);
 	static int luaPlayerRemoveMount(lua_State* L);
 	static int luaPlayerHasMount(lua_State* L);
+	static int luaPlayerOwnsMount(lua_State* L);
 
 	static int luaPlayerAddFamiliar(lua_State* L);
 	static int luaPlayerRemoveFamiliar(lua_State* L);

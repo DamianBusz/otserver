@@ -10704,6 +10704,12 @@ void ProtocolGame::AddShopItem(NetworkMessage &msg, const ShopBlock &shopBlock) 
 void ProtocolGame::parseExtendedOpcode(NetworkMessage &msg) {
 	uint8_t opcode = msg.getByte();
 	const std::string &buffer = msg.getString();
+	if (opcode == MiscAnalyser::OPCODE) {
+		if (!oldProtocol && isPartyTrackingConnected()) {
+			miscAnalyser.handleRequest(buffer);
+		}
+		return;
+	}
 	if (opcode == PartyTracking::OPCODE) {
 		if (isPartyTrackingConnected()) {
 			partyTracking.handleRequest(buffer);
@@ -10732,6 +10738,26 @@ bool ProtocolGame::isPartyTrackingConnected() const {
 	const auto connection = getConnection();
 	return !m_isLivestreamViewer && acceptPackets && player && player->client.get() == this
 	    && !player->isRemoved() && connection && connection->isOpen();
+}
+
+void ProtocolGame::recordMiscCounter(uint8_t counter, uint64_t amount) {
+	if (!oldProtocol && isPartyTrackingConnected()) {
+		miscAnalyser.record(counter, amount);
+	}
+}
+
+void ProtocolGame::flushMiscAnalyser() {
+	if (oldProtocol || !isPartyTrackingConnected()) {
+		return;
+	}
+	const auto payload = miscAnalyser.takePending();
+	if (payload.is_null()) {
+		return;
+	}
+	NetworkMessage msg;
+	MiscAnalyser::writePacket(msg, payload);
+	// Personal counters must not be mirrored to livestream viewers.
+	getOutputBuffer(msg.getLength())->append(msg);
 }
 
 void ProtocolGame::refreshPartyTracking() {

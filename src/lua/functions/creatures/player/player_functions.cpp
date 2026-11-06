@@ -124,6 +124,7 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "addMinorCharmEchoes", PlayerFunctions::luaPlayerAddMinorCharmEchoes);
 	Lua::registerMethod(L, "Player", "getCharmTier", PlayerFunctions::luaPlayerGetCharmTier);
 	Lua::registerMethod(L, "Player", "getCharmChance", PlayerFunctions::luaPlayerGetCharmChance);
+	Lua::registerMethod(L, "Player", "recordCharmProc", PlayerFunctions::luaPlayerRecordCharmProc);
 	Lua::registerMethod(L, "Player", "resetOldCharms", PlayerFunctions::luaPlayerResetOldCharms);
 	Lua::registerMethod(L, "Player", "isPlayer", PlayerFunctions::luaPlayerIsPlayer);
 
@@ -306,11 +307,13 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "removeOutfit", PlayerFunctions::luaPlayerRemoveOutfit);
 	Lua::registerMethod(L, "Player", "removeOutfitAddon", PlayerFunctions::luaPlayerRemoveOutfitAddon);
 	Lua::registerMethod(L, "Player", "hasOutfit", PlayerFunctions::luaPlayerHasOutfit);
+	Lua::registerMethod(L, "Player", "getOwnedOutfitAddons", PlayerFunctions::luaPlayerGetOwnedOutfitAddons);
 	Lua::registerMethod(L, "Player", "sendOutfitWindow", PlayerFunctions::luaPlayerSendOutfitWindow);
 
 	Lua::registerMethod(L, "Player", "addMount", PlayerFunctions::luaPlayerAddMount);
 	Lua::registerMethod(L, "Player", "removeMount", PlayerFunctions::luaPlayerRemoveMount);
 	Lua::registerMethod(L, "Player", "hasMount", PlayerFunctions::luaPlayerHasMount);
+	Lua::registerMethod(L, "Player", "ownsMount", PlayerFunctions::luaPlayerOwnsMount);
 
 	Lua::registerMethod(L, "Player", "addFamiliar", PlayerFunctions::luaPlayerAddFamiliar);
 	Lua::registerMethod(L, "Player", "removeFamiliar", PlayerFunctions::luaPlayerRemoveFamiliar);
@@ -730,6 +733,17 @@ int PlayerFunctions::luaPlayerGetCharmTier(lua_State* L) {
 
 	charmRune_t charmId = Lua::getNumber<charmRune_t>(L, 2);
 	Lua::pushNumber(L, player->getCharmTier(charmId));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerRecordCharmProc(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto id = Lua::getNumber<int32_t>(L, 2, -1);
+	const bool valid = player && id >= CHARM_WOUND && id <= CHARM_OVERFLUX;
+	if (valid) {
+		player->recordMiscCharm(static_cast<charmRune_t>(id));
+	}
+	Lua::pushBoolean(L, valid);
 	return 1;
 }
 
@@ -3005,6 +3019,26 @@ int PlayerFunctions::luaPlayerRemoveOutfitAddon(lua_State* L) {
 	return 1;
 }
 
+/***
+ * @function Player:getOwnedOutfitAddons
+ * @param lookType integer
+ * @return integer|nil addons Owned addon mask (0-3), or nil when not owned. Independent of sex, premium status and access rights.
+ */
+int PlayerFunctions::luaPlayerGetOwnedOutfitAddons(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	if (player) {
+		const auto lookType = Lua::getNumber<uint16_t>(L, 2);
+		for (const auto &outfit : player->getOutfits()) {
+			if (outfit.lookType == lookType) {
+				lua_pushinteger(L, outfit.addons & 3);
+				return 1;
+			}
+		}
+	}
+	lua_pushnil(L);
+	return 1;
+}
+
 int PlayerFunctions::luaPlayerHasOutfit(lua_State* L) {
 	// player:hasOutfit(lookType[, addon = 0])
 	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
@@ -3074,6 +3108,28 @@ int PlayerFunctions::luaPlayerRemoveMount(lua_State* L) {
 	}
 	Lua::pushBoolean(L, player->untameMount(mountId));
 	return 1;
+}
+
+/***
+ * @function Player:ownsMount
+ * @param mountId integer
+ * @return boolean|nil owned Persisted mount ownership, independent of premium status and access rights. Invalid IDs return false; invalid players return nil.
+ */
+int PlayerFunctions::luaPlayerOwnsMount(lua_State* L) {
+    const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+    if (!player) {
+        lua_pushnil(L);
+        return 1;
+    }
+    const auto id = Lua::getNumber<int32_t>(L, 2);
+    if (id < 1 || id > 255 || !g_game().mounts->getMountByID(static_cast<uint8_t>(id))) {
+        Lua::pushBoolean(L, false);
+        return 1;
+    }
+    const auto offset = static_cast<uint32_t>(id - 1);
+    const auto value = player->getStorageValue(PSTRG_MOUNTS_RANGE_START + offset / 31);
+    Lua::pushBoolean(L, value != -1 && (static_cast<uint32_t>(value) & (uint32_t{1} << (offset % 31))) != 0);
+    return 1;
 }
 
 int PlayerFunctions::luaPlayerHasMount(lua_State* L) {

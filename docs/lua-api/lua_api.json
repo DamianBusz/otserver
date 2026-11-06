@@ -6566,6 +6566,17 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+<<<<<<< HEAD
+=======
+        "name": "getOwnedOutfitAddons",
+        "params": [
+          "lookType: integer"
+        ],
+        "return": "integer|nil addons Owned addon mask (0-3), or nil when not owned. Independent of sex, premium status and access rights.",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+>>>>>>> a231bc926ff71808ca373aae53fb9003c7796086
         "name": "getPaladinStance",
         "params": [],
         "return": "string|nil",
@@ -7049,6 +7060,14 @@
           "isNpc: boolean"
         ],
         "return": "boolean|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+        "name": "ownsMount",
+        "params": [
+          "mountId: integer"
+        ],
+        "return": "boolean|nil owned Persisted mount ownership, independent of premium status and access rights. Invalid IDs return false; invalid players return nil.",
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {

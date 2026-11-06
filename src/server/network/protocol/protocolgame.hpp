@@ -16,6 +16,7 @@
 #include "utils/utils_definitions.hpp"
 #include "creatures/players/stash_definitions.hpp"
 #include "server/network/protocol/party_tracking.hpp"
+#include "server/network/protocol/misc_analyser.hpp"
 
 #include <span>
 #include <string_view>
@@ -126,6 +127,8 @@ public:
 	void login(const std::string &name, uint32_t accnumber, OperatingSystem_t operatingSystem);
 	void logout(bool displayEffect, bool forced);
 	void refreshPartyTracking();
+	void flushMiscAnalyser();
+	void recordMiscCounter(uint8_t counter, uint64_t amount = 1);
 
 	void AddItem(NetworkMessage &msg, const std::shared_ptr<Item> &item);
 	void AddItem(NetworkMessage &msg, uint16_t id, uint8_t count, uint8_t tier) const;
@@ -566,6 +569,7 @@ private:
 	void parseExtendedOpcode(NetworkMessage &msg);
 	bool isPartyTrackingConnected() const;
 	PartyTracking partyTracking;
+	MiscAnalyser miscAnalyser;
 
 	// OTCv8
 	void sendFeatures();
@@ -629,6 +633,7 @@ private:
 	friend class PlayerAttachedEffects;
 	friend class LivestreamManager;
 	friend class PartyTrackingProtocolTest;
+	friend class MiscAnalyserProtocolTest;
 
 	std::unordered_set<uint32_t> knownCreatureSet;
 	std::shared_ptr<Player> player = nullptr;

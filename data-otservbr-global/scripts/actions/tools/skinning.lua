@@ -197,6 +197,7 @@ function skinning.onUse(player, item, fromPosition, target, toPosition, isHotkey
 		return true
 	end
 
+	local scavengeActive = false
 	local charmMType, chanceRange = player:getCharmMonsterType(CHARM_SCAVENGE), 100000
 	if charmMType then
 		local charmCorpse = charmMType:getCorpseId()
@@ -204,6 +205,7 @@ function skinning.onUse(player, item, fromPosition, target, toPosition, isHotkey
 			local charmChance = player:getCharmChance(CHARM_SCAVENGE)
 			charmChance = (charmChance == 0 and 1 or charmChance) -- Guarantee that the chance will neve be 0
 			chanceRange = chanceRange * charmChance / 100
+			scavengeActive = true
 		end
 	end
 
@@ -230,6 +232,9 @@ function skinning.onUse(player, item, fromPosition, target, toPosition, isHotkey
 					target:transform(_skin.newItem, _skin.amount or 1)
 					added = true
 				end
+				if scavengeActive and added then
+					player:recordCharmProc(CHARM_SCAVENGE)
+				end
 				break
 			end
 		end
@@ -241,6 +246,9 @@ function skinning.onUse(player, item, fromPosition, target, toPosition, isHotkey
 			target:remove()
 		end
 	elseif random <= skin.value then
+		if scavengeActive then
+			player:recordCharmProc(CHARM_SCAVENGE)
+		end
 		if isInArray({ 7441, 7442, 7444, 7445 }, target.itemid) then
 			if skin.newItem == 7446 then
 				player:addAchievement("Ice Sculptor")

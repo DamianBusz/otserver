@@ -3,6 +3,12 @@ return function(api)
 	api.lifecycle = lifecycle
 
 	function lifecycle.onLogin(player)
+		api.dailySessions[api.dailySessionKey(player)] = nil
+		api.bountyGoldSessions[api.dailySessionKey(player)] = nil
+		api.dailyItemSessions[api.dailySessionKey(player)] = nil
+        api.dailyRewardSessions[api.dailySessionKey(player)] = nil
+        api.dailyPointSessions[api.dailySessionKey(player)] = nil
+		api.rewardDetailSessions[api.dailySessionKey(player)] = nil
 		api.diagnostics.trace("login", "state initialization player='{}' enabled={} eligible={}", api.diagnostics.playerName(player), api.isEnabled(), api.isTaskboardEligible(player))
 		if not api.isEnabled() then
 			return true
@@ -20,6 +26,18 @@ return function(api)
 		end
 		return true
 	end
+
+	local logoutEvent = CreatureEvent("TaskboardLogout")
+	function logoutEvent.onLogout(player)
+		api.dailySessions[api.dailySessionKey(player)] = nil
+		api.bountyGoldSessions[api.dailySessionKey(player)] = nil
+		api.dailyItemSessions[api.dailySessionKey(player)] = nil
+        api.dailyRewardSessions[api.dailySessionKey(player)] = nil
+        api.dailyPointSessions[api.dailySessionKey(player)] = nil
+		api.rewardDetailSessions[api.dailySessionKey(player)] = nil
+		return true
+	end
+	logoutEvent:register()
 
 	local loginEvent = CreatureEvent("TaskboardLogin")
 	function loginEvent.onLogin(player)

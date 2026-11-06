@@ -3482,6 +3482,13 @@ function Player:getOfflineTrainingSkill() end
 ---@return number|nil
 function Player:getOfflineTrainingTime() end
 
+<<<<<<< HEAD
+=======
+---@param lookType integer
+---@return integer|nil addons Owned addon mask (0-3), or nil when not owned. Independent of sex, premium status and access rights.
+function Player:getOwnedOutfitAddons(lookType) end
+
+>>>>>>> a231bc926ff71808ca373aae53fb9003c7796086
 ---@return string|nil
 function Player:getPaladinStance() end
 
@@ -3726,6 +3733,10 @@ function Player:openMarket() end
 ---@param isNpc boolean
 ---@return boolean|nil
 function Player:openStash(isNpc) end
+
+---@param mountId integer
+---@return boolean|nil owned Persisted mount ownership, independent of premium status and access rights. Invalid IDs return false; invalid players return nil.
+function Player:ownsMount(mountId) end
 
 ---@param message string
 ---@return boolean|nil

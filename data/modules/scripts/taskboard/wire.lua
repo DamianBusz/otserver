@@ -71,7 +71,7 @@ return function(api)
 			msg:addByte(api.clampByte(index - 1))
 			msg:addU16(api.clampU16(task.raceId))
 			msg:addU16(api.clampU16(task.required))
-			msg:addU32(api.clampU32(task.experience))
+			msg:addU32(api.rules.getBountyExperience(player, task.experience))
 			msg:addByte(api.clampByte(task.bountyPoints))
 			msg:addU16(api.clampU16(task.current))
 			msg:addByte(api.clampByte(task.state))
@@ -107,11 +107,27 @@ return function(api)
 		api.diagnostics.trace("send", "window player='{}' opcode=0x{} window={} tasks={} preferences={}", api.diagnostics.playerName(player), api.diagnostics.hexByte(api.packet.serverTaskboard), api.window.bounty, taskCount, preferenceCount)
 		msg:sendToPlayer(player)
 		wire.sendBalances(player, state)
+		if api.rewardDetailSessions[api.dailySessionKey(player)] then
+			local details = NetworkMessage()
+			sendHeader(details, api.window.bountyRewards)
+			details:addByte(taskCount)
+			for index = 1, taskCount do
+				details:addByte(index - 1)
+				details:addByte(api.clampByte(state.bounty.tasks[index].rerolls or 1))
+			end
+			details:sendToPlayer(player)
+		end
+		if api.bountyGoldSessions[api.dailySessionKey(player)] then
+			local price = NetworkMessage()
+			sendHeader(price, api.window.bountyGoldPrice)
+			price:addU32(api.getBountyGoldRerollPrice(player))
+			price:sendToPlayer(player)
+		end
 	end
 
-	function wire.sendWeekly(player, state)
+	function wire.sendWeekly(player, state, window)
 		local msg = NetworkMessage()
-		sendHeader(msg, api.window.weekly)
+		sendHeader(msg, window or api.window.weekly)
 		local anyCreature = state.weekly.anyCreature
 		msg:addU16(api.clampU16(anyCreature.required))
 		msg:addU16(api.clampU16(anyCreature.current))
@@ -151,13 +167,43 @@ return function(api)
 		msg:addU32(api.clampU32(state.meta.nextWeeklyReset))
 		msg:addByte(state.general.weeklyExpansionUnlocked and 1 or 0)
 		msg:addU32(api.clampU32(api.rules.getWeeklyRewardPoints(state)))
-		local soulsealsTail = api.usesWeeklySoulsealsTail(player)
+		local soulsealsTail = state.isDaily or api.usesWeeklySoulsealsTail(player)
 		if soulsealsTail then
 			msg:addU32(api.clampU32(state.weekly.soulseals))
 		end
-		api.diagnostics.trace("send", "window player='{}' opcode=0x{} window={} kills={} items={} selectionPending={} soulsealsTail={}", api.diagnostics.playerName(player), api.diagnostics.hexByte(api.packet.serverTaskboard), api.window.weekly, killCount, itemCount, state.weekly.selectionPending, soulsealsTail)
+		api.diagnostics.trace("send", "window player='{}' opcode=0x{} window={} kills={} items={} selectionPending={} soulsealsTail={}", api.diagnostics.playerName(player), api.diagnostics.hexByte(api.packet.serverTaskboard), window or api.window.weekly, killCount, itemCount, state.weekly.selectionPending, soulsealsTail)
 		msg:sendToPlayer(player)
 		wire.sendBalances(player, state)
+	end
+
+	function wire.sendDaily(player, state)
+		if not api.dailyItemSessions[api.dailySessionKey(player)] then
+			return wire.sendWeekly(player, api.dailyView(state), api.window.daily)
+		end
+		local msg = NetworkMessage()
+		local detailed = api.dailyRewardSessions[api.dailySessionKey(player)]
+        local points = api.dailyPointSessions[api.dailySessionKey(player)]
+        sendHeader(msg, points and api.window.dailyPoints or (detailed and api.window.dailyRewards or api.window.dailyKills))
+		msg:addByte(state.daily.difficulty)
+		msg:addU32(api.clampU32(state.meta.nextDailyReset))
+		msg:addU32(api.clampU32(state.daily.revision))
+		msg:addByte(#state.daily.kills)
+		for index, task in ipairs(state.daily.kills) do
+			msg:addByte(index - 1)
+			msg:addU16(api.clampU16(task.raceId))
+			msg:addU16(api.clampU16(task.required))
+			msg:addU16(api.clampU16(task.current))
+			msg:addU16(api.clampU16(task.rewardId))
+			msg:addU16(api.clampU16(task.rewardCount))
+			msg:addByte(task.claimed and 1 or 0)
+            if detailed then
+                msg:addU32(api.rules.getTaskExperience(player, task.experience))
+                msg:addU16(api.clampU16(task.bonusPotionId or 0))
+            end
+            if points then msg:addU16(api.clampU16(task.bountyPoints or 0)) end
+		end
+		msg:sendToPlayer(player)
+        wire.sendBalances(player, state)
 	end
 
 	function wire.sendShop(player, state)
@@ -204,7 +250,9 @@ return function(api)
 	end
 
 	function wire.sendWindow(player, state, window)
-		if window == api.window.weekly then
+		if window == api.window.daily then
+			return wire.sendDaily(player, state)
+		elseif window == api.window.weekly then
 			return wire.sendWeekly(player, state)
 		end
 		if window == api.window.shop then

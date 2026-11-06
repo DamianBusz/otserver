@@ -39,7 +39,7 @@ function MonsterType:generateLootRoll(config, resultTable, player)
 		local dynamicFactor = factor * (math.random(95, 105) / 100)
 		local adjustedChance = chance * dynamicFactor
 
-		local originalChance = chance
+		local originalChance = adjustedChance
 		if config.gut and iType:getType() == ITEM_TYPE_CREATUREPRODUCT then
 			local charmChance = player:getCharmChance(CHARM_GUT)
 			adjustedChance = adjustedChance + math.ceil((adjustedChance * charmChance / 100))
@@ -61,7 +61,10 @@ function MonsterType:generateLootRoll(config, resultTable, player)
 			count = 1
 		end
 
-		local gutTriggered = randValue < chance and randValue > originalChance
+		local gutTriggered = config.gut and adjustedChance > originalChance and randValue >= originalChance
+		if gutTriggered and count > 0 then
+			player:recordCharmProc(CHARM_GUT)
+		end
 
 		result[item.itemId].count = result[item.itemId].count + count
 		result[item.itemId].gut = config.gut and iType:getType() == ITEM_TYPE_CREATUREPRODUCT and gutTriggered

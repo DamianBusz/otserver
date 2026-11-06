@@ -1,4 +1,5 @@
 return {
+	huntingRewardPool = "outfits", -- Only this paid Store catalog is eligible for hunting bags.
 	icons = { "Category_Outfits.png" },
 	name = "Outfits",
 	parent = "Cosmetics",
