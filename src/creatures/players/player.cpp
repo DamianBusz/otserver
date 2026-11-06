@@ -1835,6 +1835,18 @@ void Player::updateSupplyTracker(const std::shared_ptr<Item> &item) {
 	}
 }
 
+void Player::recordMiscCharm(charmRune_t charm) const {
+	if (client && charm >= CHARM_WOUND && charm <= CHARM_OVERFLUX) {
+		client->recordMiscCounter(static_cast<uint8_t>(charm));
+	}
+}
+
+void Player::recordMiscEffect(MiscAnalyserCounter counter, uint64_t amount) const {
+	if (client) {
+		client->recordMiscCounter(static_cast<uint8_t>(counter), amount);
+	}
+}
+
 void Player::updateImpactTracker(CombatType_t type, int32_t amount) const {
 	if (client) {
 		client->sendUpdateImpactTracker(type, amount);
@@ -4145,6 +4157,9 @@ void Player::death(const std::shared_ptr<Creature> &lastHitCreature) {
 			if (mType && mType->info.raceid == charmBlessRaceId) {
 				const auto percentReduction = charm->chance[charmBless.tier] / 100;
 				deathLossPercent -= deathLossPercent * percentReduction;
+				if (percentReduction > 0) {
+					recordMiscCharm(CHARM_BLESS);
+				}
 			}
 		}
 
@@ -11175,6 +11190,7 @@ void Player::triggerMomentum() {
 	double_t randomChance = uniform_random(0, 10000) / 100.;
 	if (getZoneType() != ZONE_PROTECTION && hasCondition(CONDITION_INFIGHT) && ((OTSYS_TIME() / 1000) % 2) == 0 && chance > 0 && randomChance < chance) {
 		bool triggered = false;
+		bool reducedCooldown = false;
 		auto it = conditions.begin();
 		while (it != conditions.end()) {
 			const auto condItem = *it;
@@ -11187,9 +11203,13 @@ void Player::triggerMomentum() {
 			triggered = true;
 			if (type == CONDITION_SPELLCOOLDOWN || (type == CONDITION_SPELLGROUPCOOLDOWN && spellId > SPELLGROUP_SUPPORT)) {
 				condItem->setTicks(newTicks);
+				reducedCooldown |= newTicks < ticks;
 				type == CONDITION_SPELLGROUPCOOLDOWN ? sendSpellGroupCooldown(static_cast<SpellGroup_t>(spellId), newTicks) : sendSpellCooldown(spellId, newTicks);
 			}
 			++it;
+		}
+		if (reducedCooldown) {
+			recordMiscEffect(MiscAnalyserCounter::Momentum);
 		}
 		if (triggered) {
 			g_game().addMagicEffect(getPosition(), CONST_ME_HOURGLASS);
@@ -11274,6 +11294,7 @@ void Player::triggerTranscendence() {
 		sendBasicData();
 
 		sendTextMessage(MESSAGE_ATTENTION, "Transcendence was triggered.");
+		recordMiscEffect(MiscAnalyserCounter::Transcendence);
 
 		// Send player data after transcendence timer expire
 		const auto &task = createPlayerTask(

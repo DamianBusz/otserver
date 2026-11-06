@@ -935,12 +935,14 @@ void Game::updatePartyTracking() {
 	for (const auto &[id, player] : getPlayers()) {
 		if (player->client) {
 			player->client->refreshPartyTracking();
+			player->client->flushMiscAnalyser();
 		}
 	}
 	// Death-screen sessions are removed from players before the connection ends.
 	for (const auto &[name, weakPlayer] : m_deadPlayers) {
 		if (const auto player = weakPlayer.lock(); player && player->client) {
 			player->client->refreshPartyTracking();
+			player->client->flushMiscAnalyser();
 		}
 	}
 }
@@ -7919,6 +7921,10 @@ bool Game::combatBlockHit(CombatDamage &damage, const std::shared_ptr<Creature> 
 		if ((chance > 0 && uniform_random(0, 10000) < chance) || damage.hazardDodge) {
 			InternalGame::sendBlockEffect(BLOCK_DODGE, damage.primary.type, target->getPosition(), attacker);
 			targetPlayer->sendTextMessage(MESSAGE_ATTENTION, "You dodged an attack.");
+			const auto armor = targetPlayer->getInventoryItem(CONST_SLOT_ARMOR);
+			if (!damage.hazardDodge && armor && armor->getTier() > 0) {
+				targetPlayer->recordMiscEffect(MiscAnalyserCounter::Ruse);
+			}
 			return true;
 		}
 	}
@@ -8885,6 +8891,21 @@ bool Game::combatChangeHealth(const std::shared_ptr<Creature> &attacker, const s
 
 		if (attackerPlayer) {
 			if (!damage.extension && damage.origin != ORIGIN_CONDITION) {
+				if (realDamage > 0) {
+					if (damage.critical) {
+						attackerPlayer->recordMiscEffect(MiscAnalyserCounter::CriticalHit);
+					}
+					if (damage.fatal) {
+						attackerPlayer->recordMiscEffect(MiscAnalyserCounter::Onslaught);
+					}
+					if (!damage.suppressCharms) {
+						for (auto charm : { CHARM_LOW, CHARM_SAVAGE }) {
+							if (damage.miscCharmProcs & (uint32_t(1) << charm)) {
+								attackerPlayer->recordMiscCharm(charm);
+							}
+						}
+					}
+				}
 				if (!damage.suppressCharms) {
 					applyCharmRune(targetMonster, attackerPlayer, target, realDamage);
 				}
@@ -9130,10 +9151,13 @@ void Game::applyManaLeech(
 	auto wheelLeechAmount = attackerPlayer->wheel().checkDrainBodyLeech(target, SKILL_MANA_LEECH_AMOUNT);
 	int64_t manaSkill = static_cast<int64_t>(attackerPlayer->getSkillLevel(SKILL_MANA_LEECH_AMOUNT)) + wheelLeechAmount + damage.manaLeech;
 
+	bool charmApplied = false;
 	// Void charm rune
 	if (!damage.suppressCharms && targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VOID) == targetMonster->getRaceId()) {
 		if (const auto &charm = g_iobestiary().getBestiaryCharm(CHARM_VOID)) {
-			manaSkill += charm->chance[attackerPlayer->getCharmTier(CHARM_VOID)] * 100;
+			const auto bonus = charm->chance[attackerPlayer->getCharmTier(CHARM_VOID)] * 100;
+			manaSkill += bonus;
+			charmApplied = bonus > 0;
 		}
 	}
 
@@ -9150,7 +9174,15 @@ void Game::applyManaLeech(
 	tmpDamage.primary.type = COMBAT_MANADRAIN;
 	tmpDamage.primary.value = calculateLeechAmount(realDamage, boundedManaSkill, affected);
 
+	const auto before = attackerPlayer->getMana();
 	Combat::doCombatMana(nullptr, attackerPlayer, tmpDamage, tmpParams);
+	const auto restored = int64_t(attackerPlayer->getMana()) - before;
+	if (restored > 0) {
+		attackerPlayer->recordMiscEffect(MiscAnalyserCounter::ManaGain, restored);
+		if (charmApplied) {
+			attackerPlayer->recordMiscCharm(CHARM_VOID);
+		}
+	}
 }
 
 // Life leech
@@ -9161,9 +9193,12 @@ void Game::applyLifeLeech(
 	auto wheelLeechAmount = attackerPlayer->wheel().checkDrainBodyLeech(target, SKILL_LIFE_LEECH_AMOUNT);
 	int64_t lifeSkill = static_cast<int64_t>(attackerPlayer->getSkillLevel(SKILL_LIFE_LEECH_AMOUNT)) + wheelLeechAmount + damage.lifeLeech;
 
+	bool charmApplied = false;
 	if (!damage.suppressCharms && targetMonster && attackerPlayer->parseRacebyCharm(CHARM_VAMP) == targetMonster->getRaceId()) {
 		if (const auto &charm = g_iobestiary().getBestiaryCharm(CHARM_VAMP)) {
-			lifeSkill += charm->chance[attackerPlayer->getCharmTier(CHARM_VAMP)] * 100;
+			const auto bonus = charm->chance[attackerPlayer->getCharmTier(CHARM_VAMP)] * 100;
+			lifeSkill += bonus;
+			charmApplied = bonus > 0;
 		}
 	}
 
@@ -9180,7 +9215,15 @@ void Game::applyLifeLeech(
 	tmpDamage.primary.type = COMBAT_HEALING;
 	tmpDamage.primary.value = calculateLeechAmount(realDamage, boundedLifeSkill, affected);
 
+	const auto before = attackerPlayer->getHealth();
 	Combat::doCombatHealth(nullptr, attackerPlayer, tmpDamage, tmpParams);
+	const auto restored = int64_t(attackerPlayer->getHealth()) - before;
+	if (restored > 0) {
+		attackerPlayer->recordMiscEffect(MiscAnalyserCounter::LifeGain, restored);
+		if (charmApplied) {
+			attackerPlayer->recordMiscCharm(CHARM_VAMP);
+		}
+	}
 }
 
 int32_t Game::calculateLeechAmount(const int32_t &realDamage, const uint16_t &skillAmount, int targetsAffected) const {
@@ -9215,6 +9258,9 @@ bool Game::combatChangeMana(const std::shared_ptr<Creature> &attacker, const std
 					damage.primary.value = damage.primary.type == COMBAT_MANADRAIN ? -damage.primary.value : damage.primary.value;
 					damage.secondary.value = damage.secondary.type == COMBAT_MANADRAIN ? -damage.secondary.value : damage.secondary.value;
 					manaChange = damage.primary.value + damage.secondary.value;
+					if (manaChange > 0) {
+						targetPlayer->recordMiscCharm(CHARM_VOIDINVERSION);
+					}
 				}
 			}
 		}

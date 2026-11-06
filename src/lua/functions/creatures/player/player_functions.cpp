@@ -124,6 +124,7 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "addMinorCharmEchoes", PlayerFunctions::luaPlayerAddMinorCharmEchoes);
 	Lua::registerMethod(L, "Player", "getCharmTier", PlayerFunctions::luaPlayerGetCharmTier);
 	Lua::registerMethod(L, "Player", "getCharmChance", PlayerFunctions::luaPlayerGetCharmChance);
+	Lua::registerMethod(L, "Player", "recordCharmProc", PlayerFunctions::luaPlayerRecordCharmProc);
 	Lua::registerMethod(L, "Player", "resetOldCharms", PlayerFunctions::luaPlayerResetOldCharms);
 	Lua::registerMethod(L, "Player", "isPlayer", PlayerFunctions::luaPlayerIsPlayer);
 
@@ -732,6 +733,17 @@ int PlayerFunctions::luaPlayerGetCharmTier(lua_State* L) {
 
 	charmRune_t charmId = Lua::getNumber<charmRune_t>(L, 2);
 	Lua::pushNumber(L, player->getCharmTier(charmId));
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerRecordCharmProc(lua_State* L) {
+	const auto &player = Lua::getUserdataShared<Player>(L, 1, "Player");
+	const auto id = Lua::getNumber<int32_t>(L, 2, -1);
+	const bool valid = player && id >= CHARM_WOUND && id <= CHARM_OVERFLUX;
+	if (valid) {
+		player->recordMiscCharm(static_cast<charmRune_t>(id));
+	}
+	Lua::pushBoolean(L, valid);
 	return 1;
 }
 

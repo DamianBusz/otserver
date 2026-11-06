@@ -4,4 +4,5 @@ target_sources(
             network/message/networkmessage_test.cpp
             network/protocol/multiprotocol_test.cpp
             network/protocol/party_tracking_test.cpp
+            network/protocol/misc_analyser_test.cpp
 )

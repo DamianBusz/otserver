@@ -1136,6 +1136,7 @@ void Combat::CombatConditionFunc(const std::shared_ptr<Creature> &caster, const 
 							targetPlayer->removeCondition(conditionType);
 						}
 						targetPlayer->setImmuneCleanse(conditionType);
+						targetPlayer->recordMiscCharm(CHARM_CLEANSE);
 						if (!charm->cancelMessage.empty()) {
 							targetPlayer->onCleanseCondition(conditionType);
 						}
@@ -3021,6 +3022,7 @@ void Combat::applyExtensions(const std::shared_ptr<Creature> &caster, const std:
 		bool isSingleCombat = targets.size() == 1;
 		for (const auto &targetCreature : targets) {
 			CombatDamage targetDamage = damage;
+			targetDamage.miscCharmProcs = 0;
 			// Auto-attack splash still receives ordinary criticals, but no charm
 			// may proc away from the main target (including passive critical charms).
 			targetDamage.suppressCharms |= autoAttack && targetCreature != mainTarget;
@@ -3038,6 +3040,7 @@ void Combat::applyExtensions(const std::shared_ptr<Creature> &caster, const std:
 
 				if (!targetDamage.suppressCharms && !canApplyCritical && lowBlowCrits.contains(raceId) && lowBlowCrits[raceId]) {
 					isTargetCritical = true;
+					targetDamage.miscCharmProcs |= uint32_t(1) << CHARM_LOW;
 				}
 
 				if (!targetDamage.suppressCharms && raceId == savageBlowRaceid) {
@@ -3049,6 +3052,9 @@ void Combat::applyExtensions(const std::shared_ptr<Creature> &caster, const std:
 
 			if (isTargetCritical) {
 				targetDamage.critical = true;
+				if (finalBonus > baseBonus && !targetDamage.suppressCharms) {
+					targetDamage.miscCharmProcs |= uint32_t(1) << CHARM_SAVAGE;
+				}
 				targetDamage.primary.value *= targetMultiplier;
 				targetDamage.secondary.value *= targetMultiplier;
 			}

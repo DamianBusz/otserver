@@ -1289,6 +1289,8 @@ public:
 	void sendLootStats(const std::shared_ptr<Item> &item, uint8_t count);
 	void updateSupplyTracker(const std::shared_ptr<Item> &item);
 	void updateImpactTracker(CombatType_t type, int32_t amount) const;
+	void recordMiscCharm(charmRune_t charm) const;
+	void recordMiscEffect(MiscAnalyserCounter counter, uint64_t amount = 1) const;
 
 	void updateInputAnalyzer(CombatType_t type, int32_t amount, const std::string &target) const;
 
@@ -1967,6 +1969,7 @@ private:
 	friend class IOLoginData;
 	friend class ProtocolGame;
 	friend class PartyTrackingProtocolTest;
+	friend class MiscAnalyserProtocolTest;
 	friend class MoveEvent;
 	friend class BedItem;
 	friend class PlayerWheel;

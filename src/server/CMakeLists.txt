@@ -6,6 +6,8 @@ target_sources(
             network/protocol/protocol.cpp
             network/protocol/protocol_profile.cpp
             network/protocol/protocolgame.cpp
+            network/protocol/misc_analyser.cpp
+            network/protocol/misc_analyser.hpp
             network/protocol/party_tracking.cpp
             network/protocol/party_tracking.hpp
             network/protocol/protocollogin.cpp

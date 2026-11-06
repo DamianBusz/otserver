@@ -29,6 +29,7 @@ class PlayerFunctions {
 	static int luaPlayerAddMinorCharmEchoes(lua_State* L);
 	static int luaPlayerGetCharmTier(lua_State* L);
 	static int luaPlayerGetCharmChance(lua_State* L);
+	static int luaPlayerRecordCharmProc(lua_State* L);
 	static int luaPlayerResetOldCharms(lua_State* L);
 	static int luaPlayerIsPlayer(lua_State* L);
 

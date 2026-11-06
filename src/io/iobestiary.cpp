@@ -72,6 +72,7 @@ bool IOBestiary::parseOffensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 				return false;
 			}
 
+			player->recordMiscCharm(CHARM_CARNAGE);
 			maxLevelsLimit = 6;
 			value = target->getMaxHealth();
 
@@ -105,7 +106,9 @@ bool IOBestiary::parseOffensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 		case CHARM_CRIPPLE: {
 			const auto &cripple = std::static_pointer_cast<ConditionSpeed>(Condition::createCondition(CONDITIONID_COMBAT, CONDITION_PARALYZE, 10000, 0));
 			cripple->setFormulaVars(-1, 0, -1, 0);
-			target->addCondition(cripple);
+			if (target->addCondition(cripple)) {
+				player->recordMiscCharm(CHARM_CRIPPLE);
+			}
 			return false;
 		}
 		default:
@@ -115,6 +118,9 @@ bool IOBestiary::parseOffensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 
 	// This will be handled if any switch statement be break.
 	parseOffensiveCharmCombatDamage(charm, -value, charmDamage, charmParams);
+	if (value > 0) {
+		player->recordMiscCharm(charm->id);
+	}
 
 	return true;
 }
@@ -122,6 +128,9 @@ bool IOBestiary::parseOffensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 bool IOBestiary::parseDefensiveCharmCombat(const std::shared_ptr<Charm> &charm, const std::shared_ptr<Player> &player, const std::shared_ptr<Creature> &target, int32_t realDamage, bool checkArmor, CombatDamage &charmDamage, CombatParams &charmParams) {
 	switch (charm->id) {
 		case CHARM_PARRY: {
+			if (realDamage > 0) {
+				player->recordMiscCharm(CHARM_PARRY);
+			}
 			charmDamage.primary.type = COMBAT_NEUTRALDAMAGE;
 			charmDamage.primary.value = -realDamage;
 			charmDamage.extension = true;
@@ -136,6 +145,7 @@ bool IOBestiary::parseDefensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 			return true;
 		}
 		case CHARM_DODGE: {
+			player->recordMiscCharm(CHARM_DODGE);
 			const Position &targetPos = target->getPosition();
 			g_game().addMagicEffect(targetPos, charm->effect);
 			break;
@@ -143,13 +153,17 @@ bool IOBestiary::parseDefensiveCharmCombat(const std::shared_ptr<Charm> &charm, 
 		case CHARM_ADRENALINE: {
 			const auto &adrenaline = std::static_pointer_cast<ConditionSpeed>(Condition::createCondition(CONDITIONID_COMBAT, CONDITION_HASTE, 10000, 0));
 			adrenaline->setFormulaVars(2.5, 40, 2.5, 40);
-			player->addCondition(adrenaline);
+			if (player->addCondition(adrenaline)) {
+				player->recordMiscCharm(CHARM_ADRENALINE);
+			}
 			break;
 		}
 		case CHARM_NUMB: {
 			const auto &numb = std::static_pointer_cast<ConditionSpeed>(Condition::createCondition(CONDITIONID_COMBAT, CONDITION_PARALYZE, 10000, 0));
 			numb->setFormulaVars(-1, 0, -1, 0);
-			target->addCondition(numb);
+			if (target->addCondition(numb)) {
+				player->recordMiscCharm(CHARM_NUMB);
+			}
 			break;
 		}
 
@@ -178,6 +192,7 @@ bool IOBestiary::parsePassiveCharmCombat(const std::shared_ptr<Charm> &charm, co
 			if (monster) {
 				constexpr int32_t preventFleeDuration = 30000; // Fatal Hold prevents fleeing for 30 seconds.
 				monster->setFatalHoldDuration(preventFleeDuration);
+				player->recordMiscCharm(CHARM_FATAL);
 			}
 			break;
 		default:
