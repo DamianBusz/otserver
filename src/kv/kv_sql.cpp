@@ -77,7 +77,7 @@ bool KVSQL::prepareSave(const std::string &key, const ValueWrapper &value, DBIns
 		return db.executeQuery(query);
 	}
 
-	update.addRow(fmt::format("{}, {}, {}", db.escapeString(key), value.getTimestamp(), db.escapeString(data)));
+	update.addRow(fmt::format("{}, {}, {}", db.escapeString(key), value.getTimestamp(), db.escapeBlob(data.data(), static_cast<uint32_t>(data.size()))));
 	return true;
 }
 
