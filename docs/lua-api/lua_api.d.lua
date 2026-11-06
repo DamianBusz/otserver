@@ -3174,6 +3174,12 @@ function Player:canLearnSpell(spellName) end
 ---@return boolean
 function Player:canReceiveLoot() end
 
+---@param words string
+---@param aim Position
+---@param param string
+---@return boolean
+function Player:castAimedSpell(words, aim, param) end
+
 ---@param newName string
 ---@return boolean
 function Player:changeName(newName) end
@@ -3307,9 +3313,15 @@ function Player:getDepotChest(depotId, autoCreate) end
 ---@return boolean|nil|Item
 function Player:getDepotLocker(depotId) end
 
+---@return string|nil
+function Player:getDruidStance() end
+
 ---@param skillType any
 ---@return number|nil
 function Player:getEffectiveSkillLevel(skillType) end
+
+---@return string|nil
+function Player:getElementalStance() end
 
 ---@return number|nil
 function Player:getExperience() end
@@ -3402,6 +3414,9 @@ function Player:getItemCount(itemId, subType, ignoreEquipped, ignoreStoreInbox) 
 ---@return table|nil
 function Player:getKills() end
 
+---@return string|nil
+function Player:getKnightStance() end
+
 ---@return number|nil
 function Player:getLastLoginSaved() end
 
@@ -3467,6 +3482,9 @@ function Player:getOfflineTrainingSkill() end
 ---@return number|nil
 function Player:getOfflineTrainingTime() end
 
+---@return string|nil
+function Player:getPaladinStance() end
+
 ---@return nil|Party
 function Player:getParty() end
 
@@ -3500,6 +3518,9 @@ function Player:getRewardList() end
 
 ---@return number|nil
 function Player:getSex() end
+
+---@return number|nil
+function Player:getShieldSpellDefense() end
 
 ---@param skillType any
 ---@return number|nil
@@ -3966,10 +3987,18 @@ function Player:setCurrentTitle(id) end
 ---@return boolean|nil
 function Player:setDailyReward(value) end
 
+---@param key string
+---@return boolean
+function Player:setDruidStance(key) end
+
 ---@param house House
 ---@param listId number
 ---@return boolean|nil
 function Player:setEditHouse(house, listId) end
+
+---@param flamesOrThunderOrDecayOrNone string
+---@return boolean
+function Player:setElementalStance(flamesOrThunderOrDecayOrNone) end
 
 ---@param factionId any
 ---@return boolean
@@ -4019,6 +4048,10 @@ function Player:setHazardSystemPoints(amount) end
 ---@return boolean|nil
 function Player:setKills(kills) end
 
+---@param key string
+---@return boolean
+function Player:setKnightStance(key) end
+
 ---@param level number
 ---@return boolean|nil
 function Player:setLevel(level) end
@@ -4052,6 +4085,10 @@ function Player:setMaxMana(maxMana) end
 ---@param skillId number
 ---@return boolean|nil
 function Player:setOfflineTrainingSkill(skillId) end
+
+---@param key string
+---@return boolean
+function Player:setPaladinStance(key) end
 
 ---@param newPronoun any
 ---@return boolean|nil

@@ -3980,6 +3980,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `boolean`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:castAimedSpell(words: string, aim: Position, param: string)`
+
+- Returns: `boolean`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:changeName(newName: string)`
 
 - Returns: `boolean`
@@ -4155,9 +4160,19 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `boolean|nil|Item`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:getDruidStance()`
+
+- Returns: `string|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:getEffectiveSkillLevel(skillType: any)`
 
 - Returns: `number|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
+#### `Player:getElementalStance()`
+
+- Returns: `string|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
 #### `Player:getExperience()`
@@ -4295,6 +4310,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `table|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:getKnightStance()`
+
+- Returns: `string|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:getLastLoginSaved()`
 
 - Returns: `number|nil`
@@ -4400,6 +4420,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `number|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:getPaladinStance()`
+
+- Returns: `string|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:getParty()`
 
 - Returns: `nil|Party`
@@ -4446,6 +4471,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
 #### `Player:getSex()`
+
+- Returns: `number|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
+#### `Player:getShieldSpellDefense()`
 
 - Returns: `number|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
@@ -5040,9 +5070,19 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `boolean|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:setDruidStance(key: string)`
+
+- Returns: `boolean`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:setEditHouse(house: House, listId: number)`
 
 - Returns: `boolean|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
+#### `Player:setElementalStance(flamesOrThunderOrDecayOrNone: string)`
+
+- Returns: `boolean`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
 #### `Player:setFaction(factionId: any)`
@@ -5105,6 +5145,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `boolean|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+#### `Player:setKnightStance(key: string)`
+
+- Returns: `boolean`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
 #### `Player:setLevel(level: number)`
 
 - Returns: `boolean|nil`
@@ -5143,6 +5188,11 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 #### `Player:setOfflineTrainingSkill(skillId: number)`
 
 - Returns: `boolean|nil`
+- Source: `src/lua/functions/creatures/player/player_functions.cpp`
+
+#### `Player:setPaladinStance(key: string)`
+
+- Returns: `boolean`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
 #### `Player:setPronoun(newPronoun: any)`

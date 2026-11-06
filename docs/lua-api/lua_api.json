@@ -5968,6 +5968,16 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "castAimedSpell",
+        "params": [
+          "words: string",
+          "aim: Position",
+          "param: string"
+        ],
+        "return": "boolean",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "changeName",
         "params": [
           "newName: string"
@@ -6226,11 +6236,23 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "getDruidStance",
+        "params": [],
+        "return": "string|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "getEffectiveSkillLevel",
         "params": [
           "skillType: any"
         ],
         "return": "number|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+        "name": "getElementalStance",
+        "params": [],
+        "return": "string|nil",
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
@@ -6408,6 +6430,12 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "getKnightStance",
+        "params": [],
+        "return": "string|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "getLastLoginSaved",
         "params": [],
         "return": "number|nil",
@@ -6538,6 +6566,12 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "getPaladinStance",
+        "params": [],
+        "return": "string|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "getParty",
         "params": [],
         "return": "nil|Party",
@@ -6600,6 +6634,12 @@
       },
       {
         "name": "getSex",
+        "params": [],
+        "return": "number|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+        "name": "getShieldSpellDefense",
         "params": [],
         "return": "number|nil",
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
@@ -7503,12 +7543,28 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "setDruidStance",
+        "params": [
+          "key: string"
+        ],
+        "return": "boolean",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "setEditHouse",
         "params": [
           "house: House",
           "listId: number"
         ],
         "return": "boolean|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+        "name": "setElementalStance",
+        "params": [
+          "flamesOrThunderOrDecayOrNone: string"
+        ],
+        "return": "boolean",
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
@@ -7608,6 +7664,14 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+        "name": "setKnightStance",
+        "params": [
+          "key: string"
+        ],
+        "return": "boolean",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
         "name": "setLevel",
         "params": [
           "level: number"
@@ -7671,6 +7735,14 @@
           "skillId: number"
         ],
         "return": "boolean|nil",
+        "source": "src/lua/functions/creatures/player/player_functions.cpp"
+      },
+      {
+        "name": "setPaladinStance",
+        "params": [
+          "key: string"
+        ],
+        "return": "boolean",
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
