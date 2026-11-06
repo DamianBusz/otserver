@@ -34,6 +34,18 @@ namespace {
 		}
 
 		void onRecvFirstMessage(NetworkMessage &) override { }
+
+		static bool acceptsClientHandshake(uint32_t magic, uint16_t version) {
+			return isValidClientHandshake(magic, version);
+		}
+
+		uint8_t decodeOpcode(uint8_t opcode) const {
+			return decodeClientOpcode(opcode);
+		}
+
+		static bool acceptsConfiguredClientChecksum(bool validationEnabled, std::string_view allowed, uint32_t first, uint32_t second) {
+			return acceptsClientChecksum(validationEnabled, allowed, first, second);
+		}
 	};
 
 	[[nodiscard]] uint16_t readU16(const std::byte* buffer) {
@@ -43,6 +55,40 @@ namespace {
 	[[nodiscard]] uint32_t readU32(const std::byte* buffer) {
 		return static_cast<uint32_t>(std::to_integer<uint8_t>(buffer[0])) | (static_cast<uint32_t>(std::to_integer<uint8_t>(buffer[1])) << 8) | (static_cast<uint32_t>(std::to_integer<uint8_t>(buffer[2])) << 16) | (static_cast<uint32_t>(std::to_integer<uint8_t>(buffer[3])) << 24);
 	}
+}
+
+TEST(ConnectionTransportTest, CustomClientHandshakeRequiresMagicAndVersion) {
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsClientHandshake(0x4F545331, 2));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsClientHandshake(0x4F545330, 2));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsClientHandshake(0x4F545331, 1));
+}
+
+TEST(ConnectionTransportTest, CustomClientOpcodeShiftIsSessionKeyDerivedAndReversible) {
+	constexpr std::array<uint32_t, 4> xteaKey {
+		0x10203040,
+		0x11223344,
+		0x55667788,
+		0x90ABCDEF,
+	};
+	CurrentTransportProtocol protocol(xteaKey);
+
+	constexpr uint8_t canonicalOpcode = 0x1D;
+	constexpr uint8_t shift = 178;
+	const auto wireOpcode = static_cast<uint8_t>(canonicalOpcode + shift);
+	EXPECT_NE(wireOpcode, canonicalOpcode);
+	EXPECT_EQ(canonicalOpcode, protocol.decodeOpcode(wireOpcode));
+}
+
+TEST(ConnectionTransportTest, CustomClientChecksumMustMatchConfiguredBuild) {
+	constexpr std::string_view allowedChecksums = "0123456789abcdef, fedcba9876543210, AABBCCDDEEFF0011";
+
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "0123456789abcdef", 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0xFEDCBA98, 0x76543210));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, allowedChecksums, 0xAABBCCDD, 0xEEFF0011));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "", 0x01234567, 0x89ABCDEF));
+	EXPECT_FALSE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(true, "0123456789abcdee", 0x01234567, 0x89ABCDEF));
+	EXPECT_TRUE(CurrentTransportProtocol::acceptsConfiguredClientChecksum(false, "", 0x01234567, 0x89ABCDEF));
 }
 
 TEST(ProtocolProfileRegistryTest, Version860ProfilesAreDifferentProfiles) {

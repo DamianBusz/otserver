@@ -58,19 +58,19 @@ while IFS='=' read -r key value; do
   if [[ "$key" != "#"* && "$key" != "" ]]; then
     case $key in
       CANARY_DB_HOST)
-        substitute_lua_variable "mysqlHost" "$value"
+        substitute_lua_variable "postgresHost" "$value"
         ;;
       CANARY_DB_NAME)
-        substitute_lua_variable "mysqlDatabase" "$value"
+        substitute_lua_variable "postgresDatabase" "$value"
         ;;
       CANARY_DB_USER)
-        substitute_lua_variable "mysqlUser" "$value"
+        substitute_lua_variable "postgresUser" "$value"
         ;;
       CANARY_DB_PASSWORD)
-        substitute_lua_variable "mysqlPass" "$value"
+        substitute_lua_variable "postgresPass" "$value"
         ;;
       CANARY_DB_PORT)
-        substitute_lua_variable "mysqlPort" "$value"
+        substitute_lua_variable "postgresPort" "$value"
         ;;
       CANARY_SERVER_NAME)
         substitute_lua_variable "serverName" "$value"
@@ -101,18 +101,6 @@ while IFS='=' read -r key value; do
         ;;
       CANARY_MAP_URL)
         substitute_lua_variable "mapDownloadUrl" "$value"
-        ;;
-      MYSQL_HOST)
-        substitute_lua_variable "mysqlHost" "$value"
-        ;;
-      MYSQL_DBNAME)
-        substitute_lua_variable "mysqlDatabase" "$value"
-        ;;
-      MYSQL_USER)
-        substitute_lua_variable "mysqlUser" "$value"
-        ;;
-      MYSQL_PASS)
-        substitute_lua_variable "mysqlPass" "$value"
         ;;
       SERVER_NAME)
         substitute_lua_variable "serverName" "$value"

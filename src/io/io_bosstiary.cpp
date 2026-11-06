@@ -73,8 +73,8 @@ void IOBosstiary::loadBoostedBoss() {
 	uint16_t bossId = randomBossId;
 
 	query = fmt::format(
-		"UPDATE `boosted_boss` SET `date` = '{}', `boostname` = {}, `raceid` = '{}', ",
-		today, database.escapeString(bossName), bossId
+		"UPDATE `boosted_boss` SET `date` = '{}', `boostname` = {}, ",
+		today, database.escapeString(bossName)
 	);
 
 	if (const auto bossType = getMonsterTypeByBossRaceId(bossId); bossType) {

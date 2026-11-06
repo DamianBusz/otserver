@@ -27,77 +27,74 @@ def repo_path(path: str) -> Path:
     return REPO_ROOT / candidate
 
 
-def find_mysql() -> str:
-    mysql = shutil.which("mysql")
-    if mysql:
-        return mysql
+def find_psql() -> str:
+    psql = shutil.which("psql")
+    if psql:
+        return psql
 
     candidates = [
-        r"C:\Program Files\MariaDB*\bin\mysql.exe",
-        r"C:\Program Files\MySQL\MySQL Server*\bin\mysql.exe",
-        "/usr/local/bin/mysql",
-        "/opt/homebrew/bin/mysql",
-        "/usr/bin/mysql",
+        r"C:\Program Files\PostgreSQL\*\bin\psql.exe",
+        "/usr/local/bin/psql",
+        "/opt/homebrew/bin/psql",
+        "/usr/bin/psql",
     ]
     for pattern in candidates:
         matches = glob.glob(pattern)
         if matches:
             return matches[0]
 
-    raise RuntimeError("mysql client was not found in PATH")
+    raise RuntimeError("psql was not found in PATH")
 
 
-def mysql_args(args: argparse.Namespace, database: str | None = None) -> list[str]:
-    command = [
-        find_mysql(),
+def psql_args(args: argparse.Namespace, database: str = "postgres") -> list[str]:
+    return [
+        find_psql(),
+        "--no-psqlrc",
+        "--set=ON_ERROR_STOP=1",
         f"--host={args.db_host}",
         f"--port={args.db_port}",
-        f"--user={args.db_user}",
-        "--protocol=tcp",
-        "--default-character-set=utf8mb4",
+        f"--username={args.db_user}",
+        f"--dbname={database}",
     ]
-    if database:
-        command.append(f"--database={database}")
-    return command
 
 
-def mysql_env(args: argparse.Namespace) -> dict[str, str]:
+def postgres_env(args: argparse.Namespace) -> dict[str, str]:
     env = os.environ.copy()
     if args.db_password:
-        env["MYSQL_PWD"] = args.db_password
+        env["PGPASSWORD"] = args.db_password
     return env
 
 
-def run_mysql(args: argparse.Namespace, query: str | None = None, input_file: Path | None = None, database: str | None = None) -> None:
-    command = mysql_args(args, database)
-    env = mysql_env(args)
+def run_psql(args: argparse.Namespace, query: str | None = None, input_file: Path | None = None, database: str = "postgres") -> None:
+    command = psql_args(args, database)
+    env = postgres_env(args)
     if query is not None:
-        command.extend(["--execute", query])
+        command.extend(["--command", query])
         result = subprocess.run(command, cwd=REPO_ROOT, text=True, env=env)
         if result.returncode != 0:
-            raise RuntimeError(f"mysql query failed with exit code {result.returncode}")
+            raise RuntimeError(f"PostgreSQL query failed with exit code {result.returncode}")
         return
 
     if input_file is not None:
-        with input_file.open("rb") as input_stream:
-            result = subprocess.run(command, cwd=REPO_ROOT, stdin=input_stream, env=env)
+        command.extend(["--file", str(input_file)])
+        result = subprocess.run(command, cwd=REPO_ROOT, env=env)
         if result.returncode != 0:
-            raise RuntimeError(f"mysql import failed for '{input_file}' with exit code {result.returncode}")
+            raise RuntimeError(f"PostgreSQL import failed for '{input_file}' with exit code {result.returncode}")
         return
 
-    raise RuntimeError("run_mysql requires query or input_file")
+    raise RuntimeError("run_psql requires query or input_file")
 
 
-def wait_mysql(args: argparse.Namespace) -> None:
+def wait_postgres(args: argparse.Namespace) -> None:
     deadline = time.time() + 90
     while time.time() < deadline:
         try:
-            run_mysql(args, query="SELECT 1;")
+            run_psql(args, query="SELECT 1;")
             return
         except Exception:
             time.sleep(2)
 
-    raise RuntimeError(f"MySQL did not become reachable at {args.db_host}:{args.db_port}")
+    raise RuntimeError(f"PostgreSQL did not become reachable at {args.db_host}:{args.db_port}")
 
 
 def initialize_database(args: argparse.Namespace) -> None:
@@ -105,23 +102,20 @@ def initialize_database(args: argparse.Namespace) -> None:
         print("Skipping database initialization.")
         return
 
-    wait_mysql(args)
+    wait_postgres(args)
 
-    safe_db_name = args.db_name.replace("`", "``")
-    run_mysql(
-        args,
-        query=(
-            f"DROP DATABASE IF EXISTS `{safe_db_name}`; "
-            f"CREATE DATABASE `{safe_db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-        ),
-    )
-    run_mysql(args, database=args.db_name, input_file=REPO_ROOT / "schema.sql")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", args.db_name):
+        raise RuntimeError("Database name must start with a letter or underscore and contain only letters, numbers, underscores, or hyphens")
+    safe_db_name = '"' + args.db_name.replace('"', '""') + '"'
+    run_psql(args, query=f"DROP DATABASE IF EXISTS {safe_db_name} WITH (FORCE);")
+    run_psql(args, query=f"CREATE DATABASE {safe_db_name};")
+    run_psql(args, database=args.db_name, input_file=REPO_ROOT / "schema.sql")
 
     test_account = REPO_ROOT / "docker/data/01-test_account.sql"
     test_players = REPO_ROOT / "docker/data/02-test_account_players.sql"
     if test_account.exists() and test_players.exists():
-        run_mysql(args, database=args.db_name, input_file=test_account)
-        run_mysql(args, database=args.db_name, input_file=test_players)
+        run_psql(args, database=args.db_name, input_file=test_account)
+        run_psql(args, database=args.db_name, input_file=test_players)
 
 
 def lua_string(value: str) -> str:
@@ -148,7 +142,7 @@ def write_smoke_config(args: argparse.Namespace) -> None:
         "toggleDownloadMap": "false",
         "toggleMapCustom": "false",
         "startupDatabaseOptimization": "false",
-        "mysqlDatabaseBackup": "false",
+        "postgresDatabaseBackup": "false",
         "toggleSaveInterval": "false",
         "forgeInfluencedLimit": "0",
         "forgeFiendishLimit": "0",
@@ -158,12 +152,12 @@ def write_smoke_config(args: argparse.Namespace) -> None:
         "statusProtocolPort": str(args.status_port),
         "serverName": lua_string("Canary CI Smoke"),
         "houseRentPeriod": lua_string("never"),
-        "mysqlHost": lua_string(args.db_host),
-        "mysqlUser": lua_string(args.db_user),
-        "mysqlPass": lua_string(args.db_password),
-        "mysqlDatabase": lua_string(args.db_name),
-        "mysqlPort": str(args.db_port),
-        "mysqlSock": lua_string(""),
+        "postgresHost": lua_string(args.db_host),
+        "postgresUser": lua_string(args.db_user),
+        "postgresPass": lua_string(args.db_password),
+        "postgresDatabase": lua_string(args.db_name),
+        "postgresPort": str(args.db_port),
+        "postgresSock": lua_string(""),
         "metricsEnablePrometheus": "false",
         "metricsEnableOstream": "false",
     }
@@ -333,7 +327,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--map-download-url", default="")
     parser.add_argument("--map-cache-path", default="")
     parser.add_argument("--db-host", default="127.0.0.1")
-    parser.add_argument("--db-port", type=int, default=3306)
+    parser.add_argument("--db-port", type=int, default=5432)
     parser.add_argument("--db-user", default="root")
     parser.add_argument("--db-password", default="root")
     parser.add_argument("--db-name", default="canary_smoke")

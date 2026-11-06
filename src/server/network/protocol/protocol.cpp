@@ -24,6 +24,29 @@ Protocol::Protocol(const Connection_ptr &initConnection) :
 	}
 }
 
+bool Protocol::isValidClientChecksum(const uint32_t first, const uint32_t second) {
+	return acceptsClientChecksum(
+		g_configManager().getBoolean(VALIDATE_CUSTOM_CLIENT_CHECKSUM),
+		g_configManager().getString(CUSTOM_CLIENT_CHECKSUM),
+		first,
+		second
+	);
+}
+
+bool Protocol::acceptsClientChecksum(const bool validationEnabled, const std::string_view allowedChecksums, const uint32_t first, const uint32_t second) {
+	if (!validationEnabled) {
+		return true;
+	}
+
+	const auto received = fmt::format("{:08x}{:08x}", first, second);
+	for (const auto &allowed : split(std::string(allowedChecksums))) {
+		if (asLowerCaseString(allowed) == received) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void Protocol::onSendMessage(const OutputMessage_ptr &msg) {
 	if (!rawMessages) {
 		if (const auto &connection = getConnection()) {
@@ -103,12 +126,12 @@ void Protocol::disconnect() const {
 }
 
 void Protocol::XTEA_transform(uint8_t* buffer, size_t messageLength, bool encrypt) const {
-	constexpr uint32_t delta = 0x61C88647;
+	constexpr uint32_t delta = 0x5C4E3D2D;
 	size_t readPos = 0;
 	const std::array<uint32_t, 4> newKey = key;
 
 	std::array<std::array<uint32_t, 2>, 32> precachedControlSum;
-	uint32_t sum = encrypt ? 0 : 0xC6EF3720;
+	uint32_t sum = encrypt ? 0 : 0U - (delta * 32U);
 
 	// Precompute control sums
 	if (encrypt) {

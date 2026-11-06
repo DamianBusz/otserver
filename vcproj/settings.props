@@ -18,7 +18,7 @@
     </CANARY_COMMON_LIBDEPS_BASE>
     <CANARY_COMMON_LIBDEPS>
       $(CANARY_COMMON_LIBDEPS_BASE);
-      libmariadb.lib;
+      libpq.lib;
       abseil_dll.lib;
     </CANARY_COMMON_LIBDEPS>
     <CANARY_LIBDEPS>
@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <CANARY_COMMON_LIBDEPS>
       $(CANARY_COMMON_LIBDEPS_BASE);
-      mariadbclient.lib;
+      libpq.lib;
       advapi32.lib;
       kernel32.lib;
       shlwapi.lib;

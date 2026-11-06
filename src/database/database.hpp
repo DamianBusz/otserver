@@ -12,7 +12,7 @@
 #include "declarations.hpp"
 
 #ifndef USE_PRECOMPILED_HEADERS
-	#include <mysql/mysql.h>
+	#include <libpq-fe.h>
 	#include <mutex>
 	#include <utility>
 #endif
@@ -22,7 +22,7 @@ using DBResult_ptr = std::shared_ptr<DBResult>;
 
 class Database {
 public:
-	static const size_t MAX_QUERY_SIZE = 8 * 1024 * 1024; // 8 Mb -- half the default MySQL max_allowed_packet size
+	static const size_t MAX_QUERY_SIZE = 8 * 1024 * 1024;
 
 	Database() = default;
 	~Database();
@@ -43,7 +43,7 @@ public:
 	 * This function generates a backup of the database, with options for compression.
 	 * The backup can be triggered periodically or during specific events like server loading.
 	 *
-	 * The backup operation will only execute if the configuration option `MYSQL_DB_BACKUP`
+	 * The backup operation will only execute if the configuration option `POSTGRES_DB_BACKUP`
 	 * is set to true in the `config.lua` file. If this configuration is disabled, the function
 	 * will return without performing any action.
 	 *
@@ -63,12 +63,10 @@ public:
 
 	std::string escapeBlob(const char* s, uint32_t length) const;
 
-	uint64_t getLastInsertId() const {
-		return static_cast<uint64_t>(mysql_insert_id(handle));
-	}
+	uint64_t getLastInsertId();
 
-	static const char* getClientVersion() {
-		return mysql_get_client_info();
+	static int getClientVersion() {
+		return PQlibVersion();
 	}
 
 	uint64_t getMaxPacketSize() const {
@@ -80,11 +78,11 @@ private:
 	bool rollback();
 	bool commit();
 
-	static bool isRecoverableError(unsigned int error);
+	static bool isRecoverableError(const PGresult* result, const PGconn* connection);
 
-	MYSQL* handle = nullptr;
+	PGconn* handle = nullptr;
 	mutable std::recursive_mutex databaseLock;
-	uint64_t maxPacketSize = 1048576;
+	uint64_t maxPacketSize = MAX_QUERY_SIZE;
 
 	friend class DBTransaction;
 };
@@ -93,7 +91,7 @@ constexpr auto g_database = Database::getInstance;
 
 class DBResult {
 public:
-	explicit DBResult(MYSQL_RES* res);
+	explicit DBResult(PGresult* res);
 	~DBResult();
 
 	// Non copyable
@@ -108,9 +106,10 @@ public:
 			return T();
 		}
 
-		if (row[it->second] == nullptr) {
+		if (PQgetisnull(handle, rowIndex, static_cast<int>(it->second))) {
 			return T();
 		}
+		const char* fieldValue = PQgetvalue(handle, rowIndex, static_cast<int>(it->second));
 
 		T data {};
 		try {
@@ -119,9 +118,9 @@ public:
 				using underlying_type = std::underlying_type_t<T>;
 				underlying_type value = 0;
 				if constexpr (std::is_signed_v<underlying_type>) {
-					value = static_cast<underlying_type>(std::stoll(row[it->second]));
+					value = static_cast<underlying_type>(std::stoll(fieldValue));
 				} else {
-					value = static_cast<underlying_type>(std::stoull(row[it->second]));
+					value = static_cast<underlying_type>(std::stoull(fieldValue));
 				}
 				return static_cast<T>(value);
 			}
@@ -130,38 +129,38 @@ public:
 				// Check if the type T is int8_t or int16_t
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, int16_t>) {
 					// Use std::stoi to convert string to int8_t
-					data = static_cast<T>(std::stoi(row[it->second]));
+					data = static_cast<T>(std::stoi(fieldValue));
 				}
 				// Check if the type T is int32_t
 				else if constexpr (std::is_same_v<T, int32_t>) {
 					// Use std::stol to convert string to int32_t
-					data = static_cast<T>(std::stol(row[it->second]));
+					data = static_cast<T>(std::stol(fieldValue));
 				}
 				// Check if the type T is int64_t
 				else if constexpr (std::is_same_v<T, int64_t>) {
 					// Use std::stoll to convert string to int64_t
-					data = static_cast<T>(std::stoll(row[it->second]));
+					data = static_cast<T>(std::stoll(fieldValue));
 				}
 				// Check if the type T is time_t
 				else if constexpr (std::is_same_v<T, time_t>) {
 					// Use std::stoll to convert string to time_t (usually long long)
-					data = static_cast<T>(std::stoll(row[it->second]));
+					data = static_cast<T>(std::stoll(fieldValue));
 				} else {
 					// Throws exception indicating that type T is invalid
 					g_logger().error("Invalid signed type T");
 				}
 			} else if (std::is_same<T, bool>::value) {
-				data = static_cast<T>(std::stoi(row[it->second]));
+			data = static_cast<T>(std::stoi(fieldValue));
 			} else {
 				// Check if the type T is uint8_t or uint16_t or uint32_t
 				if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t> || std::is_same_v<T, uint32_t>) {
 					// Use std::stoul to convert string to uint8_t
-					data = static_cast<T>(std::stoul(row[it->second]));
+					data = static_cast<T>(std::stoul(fieldValue));
 				}
 				// Check if the type T is uint64_t
 				else if constexpr (std::is_same_v<T, uint64_t>) {
 					// Use std::stoull to convert string to uint64_t
-					data = static_cast<T>(std::stoull(row[it->second]));
+					data = static_cast<T>(std::stoull(fieldValue));
 				} else {
 					// Send log indicating that type T is invalid
 					g_logger().error("Column '{}' has an invalid unsigned T is invalid", s);
@@ -190,10 +189,11 @@ public:
 	bool next();
 
 private:
-	MYSQL_RES* handle;
-	MYSQL_ROW row;
+	PGresult* handle;
+	int rowIndex = 0;
 
 	std::map<std::string_view, size_t> listNames;
+	mutable std::map<size_t, std::string> binaryValues;
 
 	friend class Database;
 };
@@ -204,12 +204,13 @@ private:
 class DBInsert {
 public:
 	explicit DBInsert(std::string query);
-	void upsert(const std::vector<std::string> &columns);
+	void upsert(const std::vector<std::string> &conflictColumns, const std::vector<std::string> &updateColumns);
 	bool addRow(std::string_view row);
 	bool addRow(std::ostringstream &row);
 	bool execute();
 
 private:
+	std::vector<std::string> conflictColumns;
 	std::vector<std::string> upsertColumns;
 	std::string query;
 	std::string values;

@@ -48,6 +48,7 @@ bool ConfigManager::load() {
 		loadBoolConfig(L, RESET_SESSIONS_ON_STARTUP, "resetSessionsOnStartup", false);
 		loadBoolConfig(L, TOGGLE_MAINTAIN_MODE, "toggleMaintainMode", false);
 		loadBoolConfig(L, TOGGLE_MAP_CUSTOM, "toggleMapCustom", true);
+		loadBoolConfig(L, VALIDATE_CUSTOM_CLIENT_CHECKSUM, "validateCustomClientChecksum", true);
 
 		loadFloatConfig(L, HOUSE_PRICE_RENT_MULTIPLIER, "housePriceRentMultiplier", 1.0);
 		loadFloatConfig(L, HOUSE_RENT_RATE, "houseRentRate", 1.0);
@@ -61,22 +62,23 @@ bool ConfigManager::load() {
 		loadIntConfig(L, MARKET_OFFER_DURATION, "marketOfferDuration", 30 * 24 * 60 * 60);
 		loadIntConfig(L, MARKET_REFRESH_PRICES, "marketRefreshPricesInterval", 30);
 		loadIntConfig(L, PREMIUM_DEPOT_LIMIT, "premiumDepotLimit", 8000);
-		loadIntConfig(L, SQL_PORT, "mysqlPort", 3306);
+		loadIntConfig(L, POSTGRES_PORT, "postgresPort", 5432);
 		loadIntConfig(L, STATUS_PORT, "statusProtocolPort", 7171);
 
 		loadStringConfig(L, AUTH_TYPE, "authType", "password");
+		loadStringConfig(L, CUSTOM_CLIENT_CHECKSUM, "customClientChecksum", "");
 		loadStringConfig(L, HOUSE_RENT_PERIOD, "houseRentPeriod", "never");
 		loadStringConfig(L, IP, "ip", "127.0.0.1");
 		loadStringConfig(L, MAINTAIN_MODE_MESSAGE, "maintainModeMessage", "");
 		loadStringConfig(L, MAP_AUTHOR, "mapAuthor", "Eduardo Dantas");
 		loadStringConfig(L, MAP_DOWNLOAD_URL, "mapDownloadUrl", "");
 		loadStringConfig(L, MAP_NAME, "mapName", "canary");
-		loadStringConfig(L, MYSQL_DB, "mysqlDatabase", "canary");
-		loadBoolConfig(L, MYSQL_DB_BACKUP, "mysqlDatabaseBackup", false);
-		loadStringConfig(L, MYSQL_HOST, "mysqlHost", "127.0.0.1");
-		loadStringConfig(L, MYSQL_PASS, "mysqlPass", "");
-		loadStringConfig(L, MYSQL_SOCK, "mysqlSock", "");
-		loadStringConfig(L, MYSQL_USER, "mysqlUser", "root");
+		loadStringConfig(L, POSTGRES_DB, "postgresDatabase", "canary");
+		loadBoolConfig(L, POSTGRES_DB_BACKUP, "postgresDatabaseBackup", false);
+		loadStringConfig(L, POSTGRES_HOST, "postgresHost", "127.0.0.1");
+		loadStringConfig(L, POSTGRES_PASS, "postgresPass", "");
+		loadStringConfig(L, POSTGRES_SOCK, "postgresSock", "");
+		loadStringConfig(L, POSTGRES_USER, "postgresUser", "postgres");
 	}
 
 	loadBoolConfig(L, AIMBOT_HOTKEY_ENABLED, "hotkeyAimbotEnabled", true);

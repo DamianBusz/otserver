@@ -1,11 +1,11 @@
 #!/bin/bash -e
 
 CANARY_DB_HOST="${CANARY_DB_HOST:-db}"
-CANARY_DB_PORT="${CANARY_DB_PORT:-3306}"
+CANARY_DB_PORT="${CANARY_DB_PORT:-5432}"
 CANARY_DB_USER="${CANARY_DB_USER:-canary}"
 CANARY_DB_PASSWORD="${CANARY_DB_PASSWORD:-canary}"
 CANARY_DB_NAME="${CANARY_DB_NAME:-canary}"
-CANARY_SERVER_NAME="${CANARY_SERVER_NAME:-OpenTibiaBR Canary}"
+CANARY_SERVER_NAME="${CANARY_SERVER_NAME:-TibiaZone}"
 CANARY_SERVER_IP="${CANARY_SERVER_IP:-127.0.0.1}"
 CANARY_LOGIN_PORT="${CANARY_LOGIN_PORT:-7171}"
 CANARY_GAME_PORT="${CANARY_GAME_PORT:-7172}"
@@ -74,23 +74,25 @@ set_lua_number() {
 	set_lua_line "$key" "$key = $value"
 }
 
-mysql_cmd() {
-	MYSQL_PWD="$CANARY_DB_PASSWORD" mysql \
-		--protocol=tcp \
-		--default-character-set=utf8mb4 \
-		-u "$CANARY_DB_USER" \
-		-h "$CANARY_DB_HOST" \
+psql_cmd() {
+	PGPASSWORD="$CANARY_DB_PASSWORD" psql \
+		--no-psqlrc \
+		--set=ON_ERROR_STOP=1 \
+		--no-password \
+		--username="$CANARY_DB_USER" \
+		--host="$CANARY_DB_HOST" \
 		--port="$CANARY_DB_PORT" \
+		--dbname="$CANARY_DB_NAME" \
 		"$@"
 }
 
-mysqldump_cmd() {
-	MYSQL_PWD="$CANARY_DB_PASSWORD" mysqldump \
-		--protocol=tcp \
-		--default-character-set=utf8mb4 \
-		-u "$CANARY_DB_USER" \
-		-h "$CANARY_DB_HOST" \
+pg_dump_cmd() {
+	PGPASSWORD="$CANARY_DB_PASSWORD" pg_dump \
+		--no-password \
+		--username="$CANARY_DB_USER" \
+		--host="$CANARY_DB_HOST" \
 		--port="$CANARY_DB_PORT" \
+		--dbname="$CANARY_DB_NAME" \
 		"$@"
 }
 
@@ -154,7 +156,7 @@ echo ""
 echo "===== Wait For The DB To Be Up ====="
 echo ""
 
-until mysql_cmd -e "SELECT 1;" >/dev/null 2>&1; do
+until psql_cmd --command="SELECT 1;" >/dev/null 2>&1; do
 	echo "DB offline, trying again"
 	sleep 5s
 done
@@ -164,32 +166,17 @@ echo "================================"
 echo ""
 
 echo ""
-echo "===== Ensure Canary Database ====="
-echo ""
-
-if mysql_cmd -e "USE \`$CANARY_DB_NAME\`;" >/dev/null 2>&1; then
-	echo "Database '$CANARY_DB_NAME' exists"
-else
-	echo "Creating database '$CANARY_DB_NAME'"
-	mysql_cmd -e "CREATE DATABASE \`$CANARY_DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-fi
-
-echo ""
-echo "================================"
-echo ""
-
-echo ""
 echo "===== Ensure Canary Schema ====="
 echo ""
 
-if mysql_cmd -D "$CANARY_DB_NAME" -e 'SHOW TABLES LIKE "server_config";' | grep -q server_config; then
+if psql_cmd --tuples-only --no-align --command="SELECT to_regclass('public.server_config') IS NOT NULL;" | grep -q '^t$'; then
 	echo "Existing Canary schema detected"
 	echo "Saving database backup to /data/${CANARY_DB_NAME}.sql"
-	mysqldump_cmd "$CANARY_DB_NAME" >"/data/${CANARY_DB_NAME}.sql.tmp"
+	pg_dump_cmd --file="/data/${CANARY_DB_NAME}.sql.tmp"
 	mv "/data/${CANARY_DB_NAME}.sql.tmp" "/data/${CANARY_DB_NAME}.sql"
 else
 	echo "Importing Canary schema"
-	mysql_cmd -D "$CANARY_DB_NAME" <schema.sql
+	psql_cmd --file=schema.sql
 
 	echo ""
 	echo "===== Test Accounts ====="
@@ -197,8 +184,8 @@ else
 
 	if [ "$CANARY_TEST_ACCOUNTS" = "true" ]; then
 		echo "Creating test accounts..."
-		mysql_cmd -D "$CANARY_DB_NAME" </canary/01-test_account.sql
-		mysql_cmd -D "$CANARY_DB_NAME" </canary/02-test_account_players.sql
+		psql_cmd --file=/canary/01-test_account.sql
+		psql_cmd --file=/canary/02-test_account_players.sql
 	else
 		echo "Test account creation skipped"
 	fi
@@ -234,11 +221,11 @@ echo ""
 echo "===== Apply Server Configuration ====="
 echo ""
 
-set_lua_string "mysqlHost" "$CANARY_DB_HOST"
-set_lua_string "mysqlUser" "$CANARY_DB_USER"
-set_lua_string "mysqlPass" "$CANARY_DB_PASSWORD"
-set_lua_number "mysqlPort" "$CANARY_DB_PORT"
-set_lua_string "mysqlDatabase" "$CANARY_DB_NAME"
+set_lua_string "postgresHost" "$CANARY_DB_HOST"
+set_lua_string "postgresUser" "$CANARY_DB_USER"
+set_lua_string "postgresPass" "$CANARY_DB_PASSWORD"
+set_lua_number "postgresPort" "$CANARY_DB_PORT"
+set_lua_string "postgresDatabase" "$CANARY_DB_NAME"
 set_lua_string "serverName" "$CANARY_SERVER_NAME"
 set_lua_string "ip" "$CANARY_SERVER_IP"
 set_lua_number "loginProtocolPort" "$CANARY_LOGIN_PORT"

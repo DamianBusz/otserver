@@ -19,11 +19,11 @@ flowchart LR
     lua["Lua scripting"]
     database["Persistence"]
     metrics["Observability<br/>Metrics system"]
-    mariadb["MariaDB / MySQL"]
+    postgresql["PostgreSQL"]
 
     clients --> network --> engine --> world
     world --> lua
-    world --> database --> mariadb
+    world --> database --> postgresql
     world --> metrics
 ```
 
@@ -359,7 +359,7 @@ Database operations are isolated from gameplay systems.
 
 # Database Architecture
 
-Canary uses MariaDB/MySQL.
+Canary uses PostgreSQL.
 
 Schema definition:
 
@@ -516,20 +516,13 @@ Local Docker quickstart stack:
 
 ```text
 ┌──────────────────────────────┐
-│ MariaDB                      │
+│ PostgreSQL                   │
 └───────────────┬──────────────┘
                 │
 ┌───────────────▼──────────────┐
 │ Canary runtime image         │
 │ data-otservbr-global default │
-└───────────────┬──────────────┘
-                │
-       ┌────────┴─────────┐
-       ▼                  ▼
-┌────────────┐    ┌────────────────┐
-│ MyAAC      │    │ login-server   │
-│ website    │    │ client login   │
-└────────────┘    └────────────────┘
+└──────────────────────────────┘
 ```
 
 This enables local development, local testing and LAN demos without compiling

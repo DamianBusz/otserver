@@ -38,7 +38,7 @@ Load Balancer / Firewall
 Canary Server
     │
     ▼
-MariaDB
+PostgreSQL
     │
     ▼
 Persistent Storage
@@ -48,8 +48,6 @@ Optional components:
 
 ```text
 Canary
-├── MyAAC
-├── Login Server
 ├── Metrics Collector
 ├── Discord Webhooks
 └── Reverse Proxy
@@ -116,9 +114,7 @@ Recommended for local development, local testing and LAN demos.
 Canary provides a Docker Compose quickstart including:
 
 * Canary from the published runtime image
-* MariaDB
-* MyAAC as website/admin AAC
-* `opentibiabr/login-server` as the client login webservice
+* PostgreSQL 16
 * Optional test accounts and characters
 
 Startup:
@@ -126,22 +122,18 @@ Startup:
 ```bash
 cd docker
 cp .env.dist .env
-docker compose up -d --build
+docker compose up -d
 ```
-
-The `--build` flag builds the MyAAC quickstart image. It does not compile
-Canary locally.
 
 Default exposed endpoints and ports:
 
 ```text
-MyAAC website:            http://localhost:8080
-Client login API:         http://localhost:8088/login
 Canary login protocol:    7171
 Canary game protocol:     7172
 Canary status protocol:   7173
-Login-server gRPC:        9090
 ```
+
+The quickstart does not include a website or HTTP login service.
 
 The quickstart is not a hardened production deployment with default settings.
 Before using it outside a trusted local network, change all default passwords,
@@ -166,7 +158,7 @@ Linux Server
 ├── Canary Binary
 ├── Config Files
 ├── Datapack
-├── MariaDB
+├── PostgreSQL
 └── Backup Storage
 ```
 
@@ -365,16 +357,13 @@ Offsite Archive
 Example:
 
 ```bash
-mysqldump \
-  -u root \
-  -p \
-  canary > backup.sql
+PGPASSWORD='<password>' pg_dump -U canary -d canary -f backup.sql
 ```
 
 Compressed:
 
 ```bash
-mysqldump -u root -p canary | gzip > backup.sql.gz
+PGPASSWORD='<password>' pg_dump -U canary -d canary | gzip > backup.sql.gz
 ```
 
 ---
@@ -384,7 +373,7 @@ mysqldump -u root -p canary | gzip > backup.sql.gz
 ## Database Restore
 
 ```bash
-mysql -u root -p canary < backup.sql
+PGPASSWORD='<password>' psql -U canary -d canary -f backup.sql
 ```
 
 ---
@@ -641,7 +630,7 @@ Never continue operating on a corrupted database.
 Restrict:
 
 ```text
-3306 (MariaDB)
+5432 (PostgreSQL)
 SSH
 Administration Panels
 ```
@@ -658,18 +647,15 @@ Allow:
 7171  Canary login protocol, if used directly
 7172  Canary game protocol
 7173  Canary status protocol, if public status is needed
-80    Web/API HTTP, preferably redirected to HTTPS
-443   Web/API HTTPS
-8088  login-server HTTP, only if not behind a reverse proxy
 ```
 
-Keep `9090` login-server gRPC and `3306` MariaDB restricted to trusted
-networks unless a deployment explicitly requires otherwise.
+Keep PostgreSQL restricted to trusted networks unless a deployment explicitly
+requires otherwise.
 
 Restrict:
 
 ```text
-3306
+5432
 22
 ```
 
@@ -697,7 +683,6 @@ Avoid shared credentials.
 Always use HTTPS for:
 
 ```text
-MyAAC
 APIs
 Administration Panels
 ```

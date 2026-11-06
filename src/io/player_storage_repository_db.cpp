@@ -47,7 +47,7 @@ bool DbPlayerStorageRepository::upsert(uint32_t id, const std::map<uint32_t, int
 		return true;
 	}
 	DBInsert insert("INSERT INTO `player_storage` (`player_id`,`key`,`value`) VALUES ");
-	insert.upsert({ "value" });
+	insert.upsert({ "player_id", "key" }, { "value" });
 	for (auto &[key, value] : kv) {
 		if (!insert.addRow(fmt::format("{},{},{}", id, key, value))) {
 			return false;

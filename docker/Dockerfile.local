@@ -5,7 +5,7 @@ FROM ubuntu:24.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive VCPKG_ROOT=/opt/vcpkg VCPKG_MAX_CONCURRENCY=2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake ninja-build git curl ca-certificates zip unzip tar \
-    pkg-config autoconf automake libtool python3 && rm -rf /var/lib/apt/lists/*
+    pkg-config autoconf automake libtool bison flex python3 && rm -rf /var/lib/apt/lists/*
 WORKDIR /srv
 COPY vcpkg.json vcpkg-configuration.json CMakeLists.txt CMakePresets.json ./
 COPY cmake ./cmake
@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/vcpkg \
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    mariadb-client curl ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
+    postgresql-client curl ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
 COPY --from=build /srv/build/linux-release/bin/canary /bin/canary
 WORKDIR /canary
 COPY LICENSE schema.sql key.pem ./

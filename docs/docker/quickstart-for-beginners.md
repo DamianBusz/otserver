@@ -1,51 +1,24 @@
-# Docker Quickstart For Beginners
+# Docker quickstart for beginners
 
-This guide starts a local Canary test server with Docker. It does not compile
-Canary on your machine.
+This starts a local Canary server and PostgreSQL database without compiling C++
+locally.
 
-The stack starts:
+MyAAC and the MySQL-only `opentibiabr/login-server` are not included. The server
+still exposes native login and game protocols; clients that require HTTP login
+need a separate PostgreSQL-compatible service.
 
-- MariaDB
-- Canary game server
-- MyAAC website and admin panel
-- `opentibiabr/login-server` for client login
+## Requirements
 
-## Before You Start
+- Docker Desktop on Windows/macOS, or Docker Engine with Compose v2 on Linux
+- enough disk space for the runtime image, database, and map
+- network access for the initial downloads
 
-Install Docker from the official Docker guide:
+## Start
 
-```text
-https://docs.docker.com/get-started/get-docker/
-```
-
-After installing Docker, start Docker Desktop or the Docker service before
-running any commands below.
-
-You also need internet access on the first start. Docker must download images,
-MyAAC source files, and the OTServBR global map.
-
-## Local Use Only
-
-This guide is for local testing and LAN demos. Do not expose this quickstart
-directly to the public Internet with the default settings.
-
-The default setup includes test accounts and simple local credentials so a new
-user can log in quickly. Before using it outside a trusted local network, change
-the passwords in `docker/.env`, set `CANARY_TEST_ACCOUNTS=false`, and review the
-host firewall rules.
-
-## Start On Your Own PC
-
-Open a terminal in the repository root, then enter the `docker` directory:
+Open a terminal in the repository's `docker` directory:
 
 ```bash
-cd docker
-```
-
-On Windows PowerShell:
-
-```powershell
-.\up.ps1
+cp .env.dist .env
 ```
 
 On Linux or macOS:
@@ -54,124 +27,65 @@ On Linux or macOS:
 sh ./up.sh
 ```
 
-The script creates `docker/.env` from `docker/.env.dist` if it does not already
-exist. It also performs safe Docker cleanup without deleting database volumes.
-
-Open the website:
-
-```text
-http://localhost:8080
-```
-
-Use this client login URL:
-
-```text
-http://localhost:8088/login
-```
-
-Default test account:
-
-```text
-login: @test1
-password: test
-```
-
-## Start For Other PCs On Your Network
-
-Use this when the client runs on another computer in the same local network.
-
 On Windows PowerShell:
 
 ```powershell
-.\up.ps1 -Lan
+.\up.ps1
 ```
 
-On Linux or macOS:
+Direct Compose also works:
 
 ```bash
-LAN=true sh ./up.sh
+docker compose up -d
 ```
 
-This detects the LAN IPv4 address and writes it to `docker/.env` as
-`CANARY_SERVER_IP`. The login server uses this address in the character list so
-other PCs can enter the game world.
-
-After the script finishes, it prints Docker disk usage. Open the MyAAC website
-from another PC using:
-
-```text
-http://LAN_IP:8080
-```
-
-Use this client login URL on the other PC:
-
-```text
-http://LAN_IP:8088/login
-```
-
-Replace `LAN_IP` with the address configured by the script, for example
-`192.168.1.50`.
-
-## Useful Commands
-
-Show running services:
-
-```bash
-docker compose ps
-```
-
-Watch server logs:
+The first start can take several minutes while Docker downloads the image and
+map. Watch progress with:
 
 ```bash
 docker compose logs -f server
 ```
 
-Watch website logs:
+When the log says `Server Online!`, use login `127.0.0.1:7171`, game
+`127.0.0.1:7172`, and status `127.0.0.1:7173`.
+
+The default `.env` enables local test accounts. Do not expose this setup to the
+public Internet with its default password or test data.
+
+## LAN access
 
 ```bash
-docker compose logs -f myaac
+sh ./up.sh --lan
 ```
 
-Watch login-server logs:
-
-```bash
-docker compose logs -f login-server
+```powershell
+.\up.ps1 -Lan
 ```
 
-Stop the stack without deleting data:
+Allow the protocol ports through the host firewall if another computer cannot
+connect.
+
+## Stop and restart
 
 ```bash
 docker compose down
+docker compose up -d
 ```
 
-Delete the database and persisted server data:
-
-```bash
-docker compose down -v
-```
+Do not add `-v` unless you intentionally want to delete the PostgreSQL volume.
 
 ## Troubleshooting
 
-If the script says Docker was not found, install Docker and restart your
-terminal.
+```bash
+docker compose ps
+docker compose logs db
+docker compose logs server
+docker compose config
+```
 
-If the script says Docker is not running, start Docker Desktop or the Docker
-service and try again.
+Changing database credentials after the first start does not alter the existing
+volume. Restore the old `.env` values or back up the database and deliberately
+recreate the volume.
 
-If another PC can see the character list but cannot enter the game, check
-`CANARY_SERVER_IP` in `docker/.env`. It must be the LAN address reachable from
-the other PC, not `127.0.0.1`.
-
-If another PC cannot open the website or login URL, check the firewall on the
-host machine. The quickstart uses these TCP ports:
-
-- `7171`
-- `7172`
-- `7173`
-- `7174` (11.00 legacy world port)
-- `7175` (8.60 legacy world port)
-- `8080`
-- `8088`
-
-If the first start is slow, wait for the map download and MyAAC build to finish.
-Later starts are faster because Docker reuses downloaded data and images.
+For all settings and storage details, see
+[`docker/DOCKER.md`](../../docker/DOCKER.md).

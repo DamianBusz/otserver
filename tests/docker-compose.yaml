@@ -1,6 +1,4 @@
 ---
-version: "3.3"
-
 services:
   otdb-test:
     container_name: otdb-test
@@ -9,9 +7,8 @@ services:
       dockerfile: ./tests/Dockerfile.database
     restart: unless-stopped
     environment:
-      - MYSQL_DATABASE=canary_test
-      - MYSQL_USER=otserver
-      - MYSQL_PASSWORD=otserver
-      - MYSQL_ROOT_PASSWORD=root
+      - POSTGRES_DB=canary_test
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
     ports:
-      - "3306:3306"
+      - "5432:5432"

@@ -203,7 +203,11 @@ int CanaryServer::run() {
 				}
 				g_metrics().init(metricsOptions);
 #endif
-				rsa.start();
+				try {
+					rsa.start();
+				} catch (const std::exception &err) {
+					throw FailedToInitializeCanary(err.what());
+				}
 				initializeDatabase();
 				loadModules();
 				setWorldType();
@@ -385,8 +389,6 @@ void CanaryServer::logInfos() {
 	logger.info("Linked with {} for Lua support", getLuaRuntimeDisplayVersion());
 
 	logger.info("A server developed by: {}", ProtocolStatus::SERVER_DEVELOPERS);
-	logger.info("Visit our website for updates, support, and resources: "
-	            "https://docs.opentibiabr.com/");
 }
 
 /**
@@ -490,7 +492,7 @@ void CanaryServer::initializeDatabase() {
 	if (!Database::getInstance().connect()) {
 		throw FailedToInitializeCanary("Failed to connect to database!");
 	}
-	logger.info("MySQL Version: {}", Database::getClientVersion());
+	logger.info("PostgreSQL client version: {}", Database::getClientVersion());
 
 	logger.info("Running database manager...");
 	if (!DatabaseManager::isDatabaseSetup()) {

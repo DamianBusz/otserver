@@ -23,7 +23,7 @@ endif()
 # -DCMAKE_TOOLCHAIN_FILE=/opt/workspace/vcpkg/scripts/buildsystems/vcpkg.cmake
 # .. Needed libs are in file vcpkg.json Windows required libs: .\vcpkg install
 # --triplet x64-windows asio pugixml spdlog curl protobuf parallel-hashmap
-# magic-enum mio luajit libmariadb mbedtls abseil bshoshany-thread-pool
+# magic-enum mio luajit libpq mbedtls abseil bshoshany-thread-pool
 
 if(DEFINED ENV{VCPKG_ROOT}
    AND NOT

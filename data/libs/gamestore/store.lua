@@ -131,7 +131,7 @@ local function retrieveHistoryEntries(accountId, currentPage, entriesPerPage)
 	local entries = {}
 	local offset = currentPage > 1 and entriesPerPage * (currentPage - 1) or 0
 
-	local resultId = db.storeQuery("SELECT * FROM `store_history` WHERE `account_id` = " .. accountId .. " ORDER BY `time` DESC LIMIT " .. offset .. ", " .. entriesPerPage .. ";")
+	local resultId = db.storeQuery("SELECT * FROM `store_history` WHERE `account_id` = " .. accountId .. " ORDER BY `time` DESC LIMIT " .. entriesPerPage .. " OFFSET " .. offset .. ";")
 	if resultId then
 		repeat
 			local entry = {

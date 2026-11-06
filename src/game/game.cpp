@@ -12761,7 +12761,7 @@ void Game::updatePlayersOnline() const {
 		}
 
 		// Insert the current players
-		DBInsert stmt("INSERT IGNORE INTO `players_online` (`player_id`) VALUES ");
+		DBInsert stmt("INSERT INTO `players_online` (`player_id`) VALUES ");
 		std::vector<uint32_t> onlinePlayerIds;
 		onlinePlayerIds.reserve(m_players.size());
 
