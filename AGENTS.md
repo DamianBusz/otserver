@@ -20,6 +20,10 @@ The global Git, commit, PR, C++ header, exception, and documentation policies ap
 - Never rely on cross-translation-unit static destruction order for caches, registries, or other global owners of gameplay objects. Prefer runtime-owned state; when global ownership is unavoidable, provide an explicit idempotent drain during controlled shutdown.
 - Stop and join every producer and consumer before draining global ownership, and release retained objects while all services their destructors may access are still alive. Validate shutdown with retained entries and lifetime instrumentation where practical.
 
+## PostgreSQL Binary Data
+
+- Never pass serialized or otherwise opaque bytes to `escapeString`; PostgreSQL text literals require valid client-encoding text. Use `escapeBlob` for `bytea` values and validate round-trip preservation with invalid UTF-8 bytes.
+
 ## Canary build discipline
 
 - Before an authorized local build, read `docs/building/local-validation.md`; its maintained entry-point, environment, preset, cache, and MSVC Ninja workflow is mandatory.

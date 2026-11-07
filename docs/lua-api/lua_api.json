@@ -6566,6 +6566,8 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+<<<<<<< HEAD
+=======
         "name": "getOwnedOutfitAddons",
         "params": [
           "lookType: integer"
@@ -6574,6 +6576,7 @@
         "source": "src/lua/functions/creatures/player/player_functions.cpp"
       },
       {
+>>>>>>> a231bc926ff71808ca373aae53fb9003c7796086
         "name": "getPaladinStance",
         "params": [],
         "return": "string|nil",

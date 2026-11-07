@@ -4420,11 +4420,14 @@ C++ Lua binding handlers and registration lines can override inferred signatures
 - Returns: `number|nil`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+<<<<<<< HEAD
+=======
 #### `Player:getOwnedOutfitAddons(lookType: integer)`
 
 - Returns: `integer|nil addons Owned addon mask (0-3), or nil when not owned. Independent of sex, premium status and access rights.`
 - Source: `src/lua/functions/creatures/player/player_functions.cpp`
 
+>>>>>>> a231bc926ff71808ca373aae53fb9003c7796086
 #### `Player:getPaladinStance()`
 
 - Returns: `string|nil`

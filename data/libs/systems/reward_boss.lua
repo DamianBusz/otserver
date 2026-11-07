@@ -25,14 +25,15 @@ function InsertItems(buffer, info, parent, items)
 	local start = info.running
 	for _, item in ipairs(items) do
 		if item ~= nil then
+			local attributes = item:serializeAttributes()
 			if item:getId() == ITEM_REWARD_CONTAINER then
 				table.insert(buffer, "(")
-				PushSeparated(buffer, ",", info.playerGuid, 0, parent, item:getId(), item:getSubType(), db.escapeString(item:serializeAttributes()))
+				PushSeparated(buffer, ",", info.playerGuid, 0, parent, item:getId(), item:getSubType(), db.escapeBlob(attributes, #attributes))
 				table.insert(buffer, "),")
 			else
 				info.running = info.running + 1
 				table.insert(buffer, "(")
-				PushSeparated(buffer, ",", info.playerGuid, parent, info.running, item:getId(), item:getSubType(), db.escapeString(item:serializeAttributes()))
+				PushSeparated(buffer, ",", info.playerGuid, parent, info.running, item:getId(), item:getSubType(), db.escapeBlob(attributes, #attributes))
 				table.insert(buffer, "),")
 			end
 
