@@ -11,6 +11,7 @@
 
 #include "database/database.hpp"
 #include "declarations.hpp"
+#include "server/network/protocol/market_tiers.hpp"
 #include "lib/di/container.hpp"
 
 class IOMarket {
@@ -21,6 +22,7 @@ public:
 		return inject<IOMarket>();
 	}
 
+	static std::optional<std::vector<MarketTierOverview::Row>> getTierOverview(uint16_t itemId, uint8_t maxTier);
 	static MarketOfferList getActiveOffers(MarketAction_t action);
 	static MarketOfferList getActiveOffers(MarketAction_t action, uint16_t itemId, uint8_t tier);
 	static MarketOfferList getOwnOffers(MarketAction_t action, uint32_t playerId);

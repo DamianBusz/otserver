@@ -247,6 +247,7 @@
     <ClInclude Include="..\src\server\network\protocol\protocol_profile.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocol_session_hint.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocolgame.hpp" />
+    <ClInclude Include="..\src\server\network\protocol\market_tiers.hpp" />
     <ClInclude Include="..\src\server\network\protocol\misc_analyser.hpp" />
     <ClInclude Include="..\src\server\network\protocol\party_tracking.hpp" />
     <ClInclude Include="..\src\server\network\protocol\protocollogin.hpp" />
@@ -468,6 +469,7 @@
     <ClCompile Include="..\src\server\network\protocol\protocol_profile.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocol_session_hint.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocolgame.cpp" />
+    <ClCompile Include="..\src\server\network\protocol\market_tiers.cpp" />
     <ClCompile Include="..\src\server\network\protocol\misc_analyser.cpp" />
     <ClCompile Include="..\src\server\network\protocol\party_tracking.cpp" />
     <ClCompile Include="..\src\server\network\protocol\protocollogin.cpp" />

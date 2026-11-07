@@ -17,6 +17,7 @@
 #include "creatures/players/stash_definitions.hpp"
 #include "server/network/protocol/party_tracking.hpp"
 #include "server/network/protocol/misc_analyser.hpp"
+#include "server/network/protocol/market_tiers.hpp"
 
 #include <span>
 #include <string_view>
@@ -570,6 +571,7 @@ private:
 	bool isPartyTrackingConnected() const;
 	PartyTracking partyTracking;
 	MiscAnalyser miscAnalyser;
+	int64_t lastMarketTierRequest = 0;
 
 	// OTCv8
 	void sendFeatures();

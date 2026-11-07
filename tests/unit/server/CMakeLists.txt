@@ -5,4 +5,5 @@ target_sources(
             network/protocol/multiprotocol_test.cpp
             network/protocol/party_tracking_test.cpp
             network/protocol/misc_analyser_test.cpp
+            network/protocol/market_tiers_test.cpp
 )

@@ -10704,6 +10704,31 @@ void ProtocolGame::AddShopItem(NetworkMessage &msg, const ShopBlock &shopBlock) 
 void ProtocolGame::parseExtendedOpcode(NetworkMessage &msg) {
 	uint8_t opcode = msg.getByte();
 	const std::string &buffer = msg.getString();
+	if (opcode == MarketTierOverview::OPCODE) {
+		if (oldProtocol || !isPartyTrackingConnected() || !player->isInMarket() || !hasProtocolFeature(protocolProfile, ProtocolFeature::MarketPackets)) {
+			return;
+		}
+		const auto request = MarketTierOverview::parseRequest(buffer);
+		if (!request) {
+			return;
+		}
+		const auto &item = Item::items[request->itemId];
+		if (item.id == 0 || item.wareId == 0 || item.upgradeClassification == 0) {
+			return;
+		}
+		const auto now = OTSYS_TIME();
+		if (lastMarketTierRequest != 0 && now - lastMarketTierRequest < 300) {
+			return;
+		}
+		lastMarketTierRequest = now;
+		const auto maxTier = static_cast<uint8_t>(std::clamp<int64_t>(g_configManager().getNumber(FORGE_MAX_ITEM_TIER), 0, MarketTierOverview::MAX_TIER));
+		const auto rows = IOMarket::getTierOverview(item.id, maxTier);
+		NetworkMessage response;
+		MarketTierOverview::writePacket(response, MarketTierOverview::response(*request, maxTier, rows));
+		// This is a solicited market view for this connection, never cast output.
+		getOutputBuffer(response.getLength())->append(response);
+		return;
+	}
 	if (opcode == MiscAnalyser::OPCODE) {
 		if (!oldProtocol && isPartyTrackingConnected()) {
 			miscAnalyser.handleRequest(buffer);

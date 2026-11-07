@@ -27,7 +27,9 @@ client's reserved 3–7, 86 (stance state), 87 (aimed spells), 88 (proficiency
 shaping), and 201 (shop). No handler used extended opcode 89. This document
 reserves **89** for party positions in this distribution. Extended opcode **90**
 is reserved for the [Misc Analyser](misc-analyser.md), with its own explicit
-per-connection subscription. Ordinary game opcodes
+per-connection subscription. Extended opcode **91** is reserved for the
+[market tier overview](market-tier-overview.md), a solicited read-only snapshot.
+Ordinary game opcodes
 have a separate namespace. Third-party deployments must audit their extensions
 before adopting this reservation.
 
